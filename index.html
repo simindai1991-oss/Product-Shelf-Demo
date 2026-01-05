@@ -245,12 +245,11 @@
 
                 <div class="grid grid-cols-1 gap-4">
                     <div v-for="item in monitorList" :key="item.product_code" 
-                         @click="openModal('edit', item)"
-                         class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm cursor-pointer hover:border-opay transition group">
+                         class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm transition">
                         <div class="flex justify-between items-start mb-4">
                             <div>
                                 <div class="flex items-center gap-2">
-                                    <h3 class="font-bold text-lg text-gray-800 group-hover:text-opay">{{ item.name }}</h3>
+                                    <h3 class="font-bold text-lg text-gray-800">{{ item.name }}</h3>
                                     <span :class="statusBadgeClass(getDisplayStatus(item))" class="text-xs px-2 py-0.5 rounded border">{{ getDisplayStatus(item) }}</span>
                                 </div>
                                 <div class="text-xs text-gray-500 mt-1 font-mono">Code: {{ item.product_code }}</div>
@@ -994,7 +993,8 @@
             canShowEditButton(p) {
                 if (!this.hasPermission('edit')) return false;
                 const status = this.getDisplayStatus(p);
-                // Hide if suspended, expired, or pending any approval
+                // Fix: Fix 2: '已下架' -> No Edit. '已过期' -> No Edit.
+                // '已售罄' should be editable if not expired/suspended
                 const forbidden = ['已下架', '已过期', '上架审批中', '修改审批中', '下架审批中'];
                 return !forbidden.includes(status);
             },
@@ -1168,6 +1168,7 @@
                 if (this.modalMode === 'view') return false;
                 if (this.modalMode === 'create') return true;
                 
+                // Special Rule for Non-Fixed products in Limits section
                 if (field === 'limits' && this.editingProduct.category_code !== 'Fixed') return false;
 
                 const status = this.editingProduct.status;
