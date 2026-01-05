@@ -1,0 +1,3 @@
+Product Code,Category,Product Name,Alias,Sub Start Date,Sub End Date,Rate,Min Sub Amount,Max Single Sub,Cumulative Limit,Issue Size,Product Term,Target Audience ID,Config JSON,,,,
+Fixed_1006,Fixed,Fixed_Special_test02,Fixed_Special_test02,20260115,20260131,"[{""rate"": 24, ""stepMinAmount"": 0}",₦1000,₦300000,₦300000,₦300000,30,1111,"{""is_fixed_special"":1,""benchmark_rate"": 0.15}",,,,
+Fixed_1007,Fixed,Fixed_Special_test03,Fixed_Special_test03,20260115,20260131,"[{""rate"": 24, ""stepMinAmount"": 0}",₦1000,₦300000,₦300000,₦300000,30,1111,"{""is_fixed_special"":1,""benchmark_rate"": 0.15}",,,,
