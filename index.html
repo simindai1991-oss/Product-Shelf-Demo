@@ -87,19 +87,19 @@
                     <span class="mr-3">📊</span> 额度监控
                 </a>
 
-                <a href="#" v-if="hasPermission('view')" @click.prevent="currentView = 'history'" :class="navClass('history')" class="flex items-center px-4 py-2.5 rounded-lg group transition-colors">
+                <a href="#" v-if="hasPermission('PROD_VIEW')" @click.prevent="currentView = 'history'" :class="navClass('history')" class="flex items-center px-4 py-2.5 rounded-lg group transition-colors">
                     <span class="mr-3">📉</span> 历史利率变更
                 </a>
                 
-                <a href="#" v-if="hasPermission('view')" @click.prevent="currentView = 'params'" :class="navClass('params')" class="flex items-center px-4 py-2.5 rounded-lg group transition-colors">
+                <a href="#" v-if="currentRoleCode === 'SUPER_ADMIN'" @click.prevent="currentView = 'params'" :class="navClass('params')" class="flex items-center px-4 py-2.5 rounded-lg group transition-colors">
                     <span class="mr-3">⚙️</span> 系统参数
                 </a>
 
-                <a href="#" v-if="hasPermission('user_manage')" @click.prevent="currentView = 'users'" :class="navClass('users')" class="flex items-center px-4 py-2.5 rounded-lg group transition-colors">
+                <a href="#" v-if="hasPermission('SYS_USER')" @click.prevent="currentView = 'users'" :class="navClass('users')" class="flex items-center px-4 py-2.5 rounded-lg group transition-colors">
                     <span class="mr-3">👥</span> 用户管理
                 </a>
 
-                <a href="#" v-if="hasPermission('permission_manage')" @click.prevent="currentView = 'permissions'" :class="navClass('permissions')" class="flex items-center px-4 py-2.5 rounded-lg group transition-colors">
+                <a href="#" v-if="hasPermission('SYS_ROLE')" @click.prevent="currentView = 'permissions'" :class="navClass('permissions')" class="flex items-center px-4 py-2.5 rounded-lg group transition-colors">
                     <span class="mr-3">🛡️</span> 权限管理
                 </a>
             </nav>
@@ -124,9 +124,6 @@
                                 <option value="开放中">开放中</option>
                                 <option value="已上架待开放">已上架待开放</option>
                                 <option value="草稿">草稿</option>
-                                <option value="上架审批中">上架审批中</option>
-                                <option value="修改审批中">修改审批中</option>
-                                <option value="下架审批中">下架审批中</option>
                                 <option value="已下架">已下架</option>
                                 <option value="已过期">已过期</option>
                                 <option value="已售罄">已售罄</option>
@@ -134,7 +131,7 @@
                         </div>
                     </div>
                     
-                    <button v-if="hasPermission('add')" @click="initCreateProduct" class="bg-opay hover:bg-opay-hover text-white px-4 py-2 rounded shadow font-bold flex items-center transition">
+                    <button v-if="hasPermission('PROD_CREATE')" @click="initCreateProduct" class="bg-opay hover:bg-opay-hover text-white px-4 py-2 rounded shadow font-bold flex items-center transition">
                         <span class="mr-1 text-lg">+</span> 新增产品
                     </button>
                 </div>
@@ -146,7 +143,7 @@
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-48">Product Name / Code</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-24">Category</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-48">Rate (APY)</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-32">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-32">Status / Audit</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-40">Modified Info</th>
                                 <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">操作</th>
                             </tr>
@@ -178,9 +175,16 @@
                                         <span :class="statusBadgeClass(getDisplayStatus(p))" class="px-2 py-1 text-xs rounded border font-bold whitespace-nowrap">
                                             {{ getDisplayStatus(p) }}
                                         </span>
-                                        <a href="#" v-if="['上架审批中', '修改审批中', '下架审批中'].includes(p.status) && hasPermission('audit')" 
+                                        
+                                        <div v-if="p.approval_state" class="flex items-center gap-1 mt-1">
+                                            <span class="text-[10px] bg-yellow-50 text-yellow-700 border border-yellow-200 px-1.5 rounded animate-pulse">
+                                                ⚠️ {{ getApprovalStateName(p.approval_state) }}
+                                            </span>
+                                        </div>
+
+                                        <a href="#" v-if="p.approval_state && hasPermission('PROD_AUDIT')" 
                                            @click.prevent="mockFeishuPass(p)"
-                                           class="text-[10px] text-blue-600 underline hover:text-blue-800 flex items-center gap-1">
+                                           class="text-[10px] text-blue-600 underline hover:text-blue-800 flex items-center gap-1 mt-1">
                                            🔗模拟通过
                                         </a>
                                     </div>
@@ -201,19 +205,19 @@
                                             编辑
                                     </button>
                                     
-                                    <button v-if="p.status === '草稿' && hasPermission('add')" 
+                                    <button v-if="p.status === '草稿' && hasPermission('PROD_LISTING')" 
                                             @click="initiateApproval(p, 'listing')"
                                             class="text-blue-600 hover:text-blue-800 font-bold text-xs">
                                             上架
                                     </button>
 
-                                    <button v-if="p.status === '草稿' && !isStandardProduct(p.product_code) && hasPermission('edit')" 
+                                    <button v-if="p.status === '草稿' && !isStandardProduct(p.product_code) && hasPermission('PROD_EDIT')" 
                                             @click="deleteProduct(p)"
                                             class="text-red-500 hover:text-red-700 font-bold text-xs">
                                             取消
                                     </button>
 
-                                    <button v-if="['开放中', '已上架待开放', '已售罄'].includes(getDisplayStatus(p)) && !isStandardProduct(p.product_code) && hasPermission('off_shelf')" 
+                                    <button v-if="['开放中', '已上架待开放', '已售罄'].includes(getDisplayStatus(p)) && !isStandardProduct(p.product_code) && hasPermission('PROD_OFFSHELF') && !p.approval_state" 
                                             @click="initiateApproval(p, 'offshelf')"
                                             class="text-red-600 hover:text-red-800 font-bold text-xs border border-red-200 bg-red-50 px-2 py-0.5 rounded">
                                             下架
@@ -315,7 +319,7 @@
             <div v-if="currentView === 'params'" class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
                 <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                     <h3 class="text-lg font-bold text-gray-800">系统参数配置</h3>
-                    <button v-if="hasPermission('edit')" @click="showAddParamModal = true" class="bg-gray-800 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-gray-900">
+                    <button @click="showAddParamModal = true" class="bg-gray-800 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-gray-900">
                         + 新增参数
                     </button>
                 </div>
@@ -339,7 +343,7 @@
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-500">{{ param.desc }}</td>
                             <td class="px-6 py-4">
-                                <button v-if="editingParam !== param.key && hasPermission('edit')" 
+                                <button v-if="editingParam !== param.key" 
                                         @click="startEditParam(param)" 
                                         class="text-opay hover:text-opay-dark font-bold text-xs">修改</button>
                                 <div v-if="editingParam === param.key" class="flex gap-2">
@@ -363,17 +367,17 @@
                     <ul class="divide-y divide-gray-100">
                         <li v-for="u in usersList" :key="u.id" class="py-3 flex justify-between items-center">
                             <div>
-                                <div class="font-bold text-sm">{{ u.name }} <span class="text-xs text-gray-400 font-normal">(LDAP)</span></div>
+                                <div class="font-bold text-sm">{{ u.name }} <span class="text-xs text-gray-400 font-normal">(Feishu)</span></div>
                                 <div class="text-xs text-gray-500">ID: {{ u.id }}</div>
                             </div>
                             <div class="flex items-center gap-4">
-                                <select v-if="hasPermission('user_manage')" @change="updateUserRole(u, $event)" class="text-xs border rounded p-1 bg-gray-50">
+                                <select v-if="hasPermission('SYS_USER')" @change="updateUserRole(u, $event)" class="text-xs border rounded p-1 bg-gray-50">
                                     <option v-for="r in rolesList" :value="r.code" :selected="u.role === r.code">{{ r.name }}</option>
                                 </select>
                                 <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                     {{ getRoleName(u.role) }}
                                 </span>
-                                <button class="text-gray-400 hover:text-red-500 text-xs">移除</button>
+                                <button v-if="hasPermission('SYS_USER')" class="text-gray-400 hover:text-red-500 text-xs">移除</button>
                             </div>
                         </li>
                     </ul>
@@ -392,7 +396,7 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Role Name / Code</th>
-                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Assigned Functions</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Assigned Permissions Count</th>
                                 <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Action</th>
                             </tr>
                         </thead>
@@ -404,8 +408,8 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex gap-2">
-                                        <span v-for="p in r.functionPoints" :key="p" class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded border border-blue-100">
-                                            {{ getFunctionPointName(p) }}
+                                        <span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded border border-blue-100">
+                                            {{ r.functionPoints.length }} 个功能点
                                         </span>
                                     </div>
                                 </td>
@@ -672,32 +676,68 @@
     </div>
 
     <div v-if="showRoleModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6">
+        <div class="bg-white w-full max-w-lg rounded-xl shadow-xl p-6">
             <h3 class="text-lg font-bold text-gray-800 mb-4">{{ roleModalMode === 'create' ? '新建角色' : '配置权限' }}</h3>
             <div class="space-y-4">
-                <div class="form-group">
-                    <label class="label-std">Role Name</label>
-                    <input v-model="editingRole.name" type="text" :disabled="roleModalMode !== 'create'" class="input-std">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="label-std">Role Name</label>
+                        <input v-model="editingRole.name" type="text" :disabled="roleModalMode !== 'create'" class="input-std">
+                    </div>
+                    <div class="form-group">
+                        <label class="label-std">Role Code</label>
+                        <input v-model="editingRole.code" type="text" :disabled="roleModalMode !== 'create'" class="input-std">
+                    </div>
                 </div>
+                
                 <div class="form-group">
-                    <label class="label-std">Role Code</label>
-                    <input v-model="editingRole.code" type="text" :disabled="roleModalMode !== 'create'" class="input-std">
-                </div>
-                <div class="form-group">
-                    <label class="label-std">功能权限 (Function Points)</label>
-                    <div class="space-y-2 mt-2">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" value="PERMISSION_MANAGE" v-model="editingRole.functionPoints" class="accent-opay">
-                            <span class="text-sm">权限管理 (Permission Mgmt)</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" value="PRODUCT_MANAGE" v-model="editingRole.functionPoints" class="accent-opay">
-                            <span class="text-sm">产品管理 (Product Mgmt)</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" value="QUERY" v-model="editingRole.functionPoints" class="accent-opay">
-                            <span class="text-sm">查询 (Query)</span>
-                        </label>
+                    <label class="label-std">功能权限配置 (Granular Permissions)</label>
+                    <div class="mt-2 grid grid-cols-2 gap-4 h-64 overflow-y-auto border p-2 rounded bg-gray-50">
+                        <div class="col-span-2">
+                            <div class="text-xs font-bold text-gray-400 mb-1 border-b pb-1">产品管理</div>
+                            <div class="space-y-1">
+                                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-100 rounded">
+                                    <input type="checkbox" value="PROD_CREATE" v-model="editingRole.functionPoints" class="accent-opay">
+                                    <span class="text-xs">新建产品 (Create)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-100 rounded">
+                                    <input type="checkbox" value="PROD_EDIT" v-model="editingRole.functionPoints" class="accent-opay">
+                                    <span class="text-xs">产品要素维护 (Edit)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-100 rounded">
+                                    <input type="checkbox" value="PROD_LISTING" v-model="editingRole.functionPoints" class="accent-opay">
+                                    <span class="text-xs">产品上架申请 (Listing)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-100 rounded">
+                                    <input type="checkbox" value="PROD_OFFSHELF" v-model="editingRole.functionPoints" class="accent-opay">
+                                    <span class="text-xs">产品下架申请 (Off-shelf)</span>
+                                </label>
+                                </div>
+                        </div>
+                        
+                        <div class="col-span-2">
+                            <div class="text-xs font-bold text-gray-400 mb-1 border-b pb-1 mt-2">查询</div>
+                             <div class="space-y-1">
+                                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-100 rounded">
+                                    <input type="checkbox" value="PROD_VIEW" v-model="editingRole.functionPoints" class="accent-opay">
+                                    <span class="text-xs">产品/报表查询 (View)</span>
+                                </label>
+                             </div>
+                        </div>
+
+                        <div class="col-span-2">
+                            <div class="text-xs font-bold text-gray-400 mb-1 border-b pb-1 mt-2">系统管理</div>
+                             <div class="space-y-1">
+                                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-100 rounded">
+                                    <input type="checkbox" value="SYS_USER" v-model="editingRole.functionPoints" class="accent-opay">
+                                    <span class="text-xs">用户管理 (User Mgmt)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-100 rounded">
+                                    <input type="checkbox" value="SYS_ROLE" v-model="editingRole.functionPoints" class="accent-opay">
+                                    <span class="text-xs">角色权限管理 (Role Mgmt)</span>
+                                </label>
+                             </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -713,7 +753,7 @@
             <h3 class="text-lg font-bold text-gray-800 mb-4">添加用户</h3>
             <div class="space-y-4">
                 <div class="form-group">
-                    <label class="label-std">LDAP (飞书账号)</label>
+                    <label class="label-std">飞书账号 (Feishu)</label>
                     <input v-model="newUserForm.name" type="text" placeholder="e.g. zhangsan" class="input-std">
                 </div>
                 <div class="form-group">
@@ -800,27 +840,11 @@
         product_term: '产品期限(天)'
     };
 
-    const STATUS_MAP = {
-        'Active': '开放中',
-        'Draft': '草稿',
-        'Approved': '已上架待开放',
-        'Suspended': '已下架',
-        'Pending_Approval': '上架审批中',
-        'Pending_Modification': '修改审批中',
-        'Pending_OffShelf': '下架审批中',
-        'Expired': '已过期'
-    };
-
-    const PERM_MAPPING = {
-        'PRODUCT_MANAGE': ['view', 'edit', 'add', 'audit', 'off_shelf'],
-        'QUERY': ['view'],
-        'PERMISSION_MANAGE': ['user_manage', 'permission_manage']
-    };
-
-    const FUNCTION_POINT_NAMES = {
-        'PRODUCT_MANAGE': '产品管理',
-        'QUERY': '查询',
-        'PERMISSION_MANAGE': '权限管理'
+    // Task 1: Product Status vs Audit Status logic mapping
+    const APPROVAL_STATE_MAP = {
+        'listing': '上架审核中',
+        'modification': '修改审核中',
+        'offshelf': '下架审核中'
     };
 
     const app = Vue.createApp({
@@ -902,10 +926,13 @@
                 });
             },
             diffResult() {
+                // Rule 2: For diffing, if mode is 'modify', we compare editingProduct vs current active product
+                // If it's listing/offshelf, compare differently.
+                
                 const diff = {};
                 const keys = Object.keys({ ...this.originalSnapshot, ...this.editingProduct });
                 keys.forEach(key => {
-                    if (['displayRate', 'update_time', 'operator', 'sold_amount'].includes(key)) return;
+                    if (['displayRate', 'update_time', 'operator', 'sold_amount', 'approval_state', 'pending_changes'].includes(key)) return;
                     
                     if (key === 'rates') {
                          const oldRates = JSON.stringify(this.originalSnapshot[key]);
@@ -925,24 +952,41 @@
                 this.configLoaded = true;
                 const C = window.OPAY_FINANCE_CONFIG;
                 
-                // Init Roles
+                // Task 4: Updated granular roles
                 this.rolesList = [
-                    { code: 'SUPER_ADMIN', name: '超级管理员', functionPoints: ['PERMISSION_MANAGE', 'PRODUCT_MANAGE', 'QUERY'] },
-                    { code: 'PRODUCT_ADMIN', name: '产品管理员', functionPoints: ['PRODUCT_MANAGE', 'QUERY'] },
-                    { code: 'USER', name: '一般用户', functionPoints: ['QUERY'] }
+                    { 
+                        code: 'SUPER_ADMIN', 
+                        name: '超级管理员', 
+                        functionPoints: ['PROD_CREATE', 'PROD_EDIT', 'PROD_LISTING', 'PROD_OFFSHELF', 'PROD_AUDIT', 'PROD_VIEW', 'SYS_USER', 'SYS_ROLE'] 
+                    },
+                    { 
+                        code: 'PRODUCT_ADMIN', 
+                        name: '产品管理员', 
+                        functionPoints: ['PROD_CREATE', 'PROD_EDIT', 'PROD_LISTING', 'PROD_OFFSHELF', 'PROD_VIEW'] 
+                    },
+                    { 
+                        code: 'USER', 
+                        name: '一般用户', 
+                        functionPoints: ['PROD_VIEW'] 
+                    }
                 ];
 
                 this.categories = C.categories;
                 
                 this.products = C.products.map(p => {
-                    let statusCN = STATUS_MAP[p.status] || p.status;
+                    let statusCN = p.status; // Default
+                    if(p.status === 'Active') statusCN = '开放中';
+                    // ... other mappings handled in getDisplayStatus for dynamic
+
                     // Fix 2: Reset sold_amount for Fixed_1005 (Special Test)
                     let soldAmount = p.category_code === 'Fixed' ? Math.floor(Math.random() * (p.issue_size || 1000000)) : 0;
                     if (p.product_code === 'Fixed_1005') soldAmount = 0;
 
                     return { 
                         ...p, 
-                        status: statusCN,
+                        status: statusCN, 
+                        approval_state: null, // Task 1: New field
+                        pending_changes: null, // Task 2: New field
                         update_time: '2025-12-10 14:30',
                         operator: 'admin',
                         sold_amount: soldAmount
@@ -953,12 +997,9 @@
                     .filter(p => p.key !== 'GLOBAL_RISK_RATE')
                     .map(p => ({ ...p, tempValue: p.value }));
 
-                this.usersList = C.users;
-
-                // Fix: Empty history
+                this.usersList = C.users || []; 
                 this.globalRateHistory = [];
 
-                // Initial Check on Load
                 this.products.forEach(p => this.checkAutoActive(p));
                 this.updateMonitorList();
 
@@ -967,17 +1008,11 @@
             }
         },
         methods: {
-            // --- Helpers ---
             hasPermission(granularPerm) {
                 const currentRole = this.rolesList.find(r => r.code === this.currentRoleCode);
                 if (!currentRole) return false;
-                return currentRole.functionPoints.some(fp => {
-                    const coveredPerms = PERM_MAPPING[fp] || [];
-                    return coveredPerms.includes(granularPerm);
-                });
-            },
-            getFunctionPointName(fp) {
-                return FUNCTION_POINT_NAMES[fp] || fp;
+                // Task 4: Check granular
+                return currentRole.functionPoints.includes(granularPerm);
             },
             isStandardProduct(code) {
                 return STANDARD_PRODUCTS.includes(code);
@@ -989,13 +1024,12 @@
                 const param = this.systemParams.find(p => p.key === key);
                 return param ? param.value : 'N/A';
             },
-            // Fix: Hide Edit Button logic
             canShowEditButton(p) {
-                if (!this.hasPermission('edit')) return false;
+                if (!this.hasPermission('PROD_EDIT')) return false;
                 const status = this.getDisplayStatus(p);
-                // Fix: Fix 2: '已下架' -> No Edit. '已过期' -> No Edit.
-                // '已售罄' should be editable if not expired/suspended
-                const forbidden = ['已下架', '已过期', '上架审批中', '修改审批中', '下架审批中'];
+                // Task 2: Hide if suspended, expired, or pending any approval
+                if (p.approval_state) return false; 
+                const forbidden = ['已下架', '已过期']; 
                 return !forbidden.includes(status);
             },
             getFieldName(key) {
@@ -1009,43 +1043,36 @@
                 return '₦' + this.formatMoneyRaw(val);
             },
             
-            // --- TIME TRAVEL & STATUS LOGIC (FIXED) ---
+            // --- TIME TRAVEL & STATUS LOGIC ---
             addDays(n) {
                 const d = new Date(this.systemDate);
                 d.setDate(d.getDate() + n);
                 this.systemDate = d.toISOString().split('T')[0];
                 this.showToast(`系统时间已快进至: ${this.systemDate}`, '📅');
-                
-                // 关键修复：时间变化后，立即遍历所有产品检查是否触发自动上架
-                let activatedCount = 0;
                 this.products.forEach(p => {
-                    if(this.checkAutoActive(p)) activatedCount++;
+                    if(this.checkAutoActive(p)) {}
                 });
-                
-                if (activatedCount > 0) {
-                    this.showToast(`触发 ${activatedCount} 个产品自动上架`, '⚡');
-                }
-
-                // Force reactivity and update monitor
                 this.products = [...this.products]; 
                 this.updateMonitorList();
             },
             
-            // Core Logic for Status Display
             getDisplayStatus(p) {
-                // Expired Check (Dynamic)
+                // Priority 1: Suspended/SoldOut logic
+                if (p.status === '已下架') return '已下架';
+                
+                // Priority 2: Expired Check (Dynamic)
                 if (['开放中', '已上架待开放'].includes(p.status)) {
                     if (p.sub_end_date && p.sub_end_date < this.systemDate) {
                         return '已过期';
                     }
                 }
                 
-                // Auto Open Check (Client-side simulation)
+                // Priority 3: Auto Open
                 if (p.status === '已上架待开放' && p.sub_start_date <= this.systemDate) {
                     return '开放中'; 
                 }
                 
-                // Sold Out Logic Check (Simulation)
+                // Priority 4: Sold Out
                 if (p.category_code === 'Fixed' && p.issue_size > 0 && p.sold_amount >= p.issue_size && p.status === '开放中') {
                     return '已售罄';
                 }
@@ -1053,9 +1080,11 @@
                 return p.status;
             },
             
-            // Core Logic for State Mutation (Auto Active)
+            getApprovalStateName(code) {
+                return APPROVAL_STATE_MAP[code] || code;
+            },
+
             checkAutoActive(product) {
-                // 修复：使用 this.systemDate 而不是 new Date()
                 if (product.status === '已上架待开放' && this.systemDate >= product.sub_start_date) {
                     product.status = '开放中';
                     return true;
@@ -1067,9 +1096,6 @@
                 const map = {
                     '开放中': 'bg-green-100 text-green-800 border-green-200',
                     '草稿': 'bg-gray-100 text-gray-600 border-gray-200',
-                    '上架审批中': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-                    '修改审批中': 'bg-orange-100 text-orange-800 border-orange-200',
-                    '下架审批中': 'bg-red-50 text-red-600 border-red-100',
                     '已上架待开放': 'bg-blue-100 text-blue-800 border-blue-200',
                     '已下架': 'bg-red-100 text-red-800 border-red-200',
                     '已过期': 'bg-gray-300 text-gray-700 border-gray-400',
@@ -1100,7 +1126,6 @@
                 this.monitorList = this.products
                     .filter(p => {
                         const status = this.getDisplayStatus(p);
-                        // Filter out Off-shelf explicitly (Req #5)
                         if (status === '已下架' || status === '已过期') return false;
                         return p.category_code === 'Fixed' && p.issue_size > 0;
                     })
@@ -1111,21 +1136,17 @@
             },
             refreshMonitor() {
                 this.monitorList.forEach(item => {
-                    // Fix: Only increment if Open
                     const status = this.getDisplayStatus(item);
+                    // Task 1: Only increment '开放中'
                     if (status === '开放中') {
-                        // Increase by 5% of issue size
                         const change = Math.floor(item.issue_size * 0.05);
                         item.sold_amount = Math.min(item.issue_size, item.sold_amount + change);
                         item.progress = Math.floor((item.sold_amount / item.issue_size) * 100);
                         
-                        // Sync back to main product list
                         const p = this.products.find(x => x.product_code === item.product_code);
                         if(p) p.sold_amount = item.sold_amount;
                     }
                 });
-                
-                // Force UI update for statuses like "Sold Out"
                 this.products = [...this.products]; 
                 this.monitorLastUpdated = new Date().toLocaleTimeString();
                 this.showToast('额度数据已刷新');
@@ -1168,16 +1189,24 @@
                 if (this.modalMode === 'view') return false;
                 if (this.modalMode === 'create') return true;
                 
-                // Special Rule for Non-Fixed products in Limits section
-                if (field === 'limits' && this.editingProduct.category_code !== 'Fixed') return false;
-
                 const status = this.editingProduct.status;
                 
                 // Fix 6 & 7: Lock if Pending or Suspended
-                if (status.includes('审批中') || status === '已下架') return false;
+                if (this.editingProduct.approval_state || status === '已下架') return false;
+
+                // FIX 2: Standard Products Lockdown Logic
+                if (this.isStandardProduct(this.editingProduct.product_code)) {
+                    // Only rates allowed
+                    if (field === 'rates') return true;
+                    // All other fields forbidden
+                    return false;
+                }
+
+                // Normal Products Logic
+                if (field === 'limits' && this.editingProduct.category_code !== 'Fixed') return false;
 
                 if (status === '草稿') return true;
-                if (['开放中', '已上架待开放', '已过期'].includes(status)) {
+                if (['开放中', '已上架待开放', '已过期', '已售罄'].includes(status)) {
                     if (['name', 'category', 'code'].includes(field)) return false;
                     if (['alias', 'date', 'limits', 'rates', 'config'].includes(field)) return true;
                 }
@@ -1204,8 +1233,9 @@
                         is_tiered_rate: false
                     };
                     this.originalSnapshot = {};
-                    this.mockRateHistory = [];
                 } else {
+                    // Task 2: Always load current Active/Draft data, IGNORE pending changes for initial view
+                    // (Actually we should show current active state to let user modify from valid base)
                     this.editingProduct = JSON.parse(JSON.stringify(product));
                     if (this.editingProduct.rates) {
                         this.editingProduct.rates.forEach(r => {
@@ -1255,30 +1285,7 @@
                     this.showToast('草稿已删除', '🗑️');
                 }
             },
-            applyForOffShelf(p) {
-                this.initiateApproval(p, 'offshelf');
-            },
-            initiateApprovalFromList(p) {
-                this.initiateApproval(p, 'listing');
-            },
-
-            // --- User Mgmt ---
-            confirmAddUser() {
-                const newUser = {
-                    id: this.usersList.length + 1,
-                    name: this.newUserForm.name,
-                    role: this.newUserForm.role
-                };
-                this.usersList.push(newUser);
-                this.showAddUserModal = false;
-                this.newUserForm = { name: '', role: 'USER' };
-                this.showToast('用户添加成功', '👤');
-            },
-            updateUserRole(u, event) {
-                u.role = event.target.value;
-                this.showToast('权限已更新', '🔒');
-            },
-
+            
             // --- CSV Mock ---
             handleCsvUpload(e) {
                 const file = e.target.files[0];
@@ -1298,7 +1305,6 @@
                 }, 1000);
             },
             
-            // --- Rate Row Logic + Auto Tiered Toggle ---
             addRateRow() {
                 this.editingProduct.rates.push({ rate: 0, displayRate: 0, stepMinAmount: 0 });
                 this.checkTieredStatus();
@@ -1316,15 +1322,11 @@
             },
 
             saveProduct() {
-                // Fix 4: Detect Changes & Prevent Save if Identical
                 if (this.modalMode !== 'create') {
-                    // Create clean copies for comparison (removing UI fields)
                     const cleanEdit = JSON.parse(JSON.stringify(this.editingProduct));
                     const cleanOrig = JSON.parse(JSON.stringify(this.originalSnapshot));
-                    
-                    const ignoredKeys = ['update_time', 'operator', 'sold_amount', 'displayRate'];
+                    const ignoredKeys = ['update_time', 'operator', 'sold_amount', 'displayRate', 'approval_state', 'pending_changes'];
                     ignoredKeys.forEach(k => { delete cleanEdit[k]; delete cleanOrig[k]; });
-                    
                     if (cleanEdit.rates) cleanEdit.rates.forEach(r => delete r.displayRate);
                     if (cleanOrig.rates) cleanOrig.rates.forEach(r => delete r.displayRate);
 
@@ -1334,7 +1336,7 @@
                     }
                 }
 
-                // Validation Logic
+                // Validation
                 if (!this.editingProduct.name) return alert('产品名称不能为空');
                 if (!this.editingProduct.alias) return alert('别名不能为空');
                 if (!this.editingProduct.sub_start_date) return alert('起始日期必填');
@@ -1364,25 +1366,31 @@
                     this.showToast('草稿修改已保存');
                     this.closeModal();
                 } else {
-                    this.initiateApproval(this.editingProduct, 'modify');
+                    // Task 2: Trigger approval workflow, DO NOT update active product yet
+                    this.initiateApproval(this.editingProduct, 'modification');
                 }
                 this.updateMonitorList();
             },
 
-            // --- Workflow ---
             initiateApproval(product, action) {
+                // Setup Diff Context
+                // If Modification: comparing Active vs Edited Draft
+                // If Listing/Offshelf: comparing Current vs Intended Status change
                 this.editingProduct = JSON.parse(JSON.stringify(product));
                 this.originalSnapshot = JSON.parse(JSON.stringify(
                     this.products.find(p => p.product_code === product.product_code) || product
                 ));
-                this.pendingApprovalAction = action || 'modify';
+                this.pendingApprovalAction = action;
                 this.showDiffModal = true;
             },
+            
             getTargetStatusLabel() {
                  if (this.pendingApprovalAction === 'listing') return '已上架待开放';
                  if (this.pendingApprovalAction === 'offshelf') return '已下架';
+                 // For modification, status doesn't strictly change immediately, but logic remains same
                  return this.editingProduct.status;
             },
+            
             formatDiffValue(key, val) {
                 if (key === 'rates' && Array.isArray(val)) {
                     return val.map(r => `≥ ${this.formatMoneyRaw(r.stepMinAmount)} : ${(r.rate*100).toFixed(2)}%`).join('\n');
@@ -1390,32 +1398,23 @@
                 if (typeof val === 'object') return JSON.stringify(val);
                 return val;
             },
+            
             confirmApproval() {
                 const idx = this.products.findIndex(p => p.product_code === this.editingProduct.product_code);
-                let newStatus = '';
                 
-                if (this.pendingApprovalAction === 'listing') newStatus = '上架审批中';
-                if (this.pendingApprovalAction === 'modify') newStatus = '修改审批中';
-                if (this.pendingApprovalAction === 'offshelf') newStatus = '下架审批中';
-
                 if (idx !== -1) {
-                    this.products[idx].status = newStatus;
                     this.products[idx].update_time = new Date().toLocaleString();
                     this.products[idx].operator = this.currentUser.name;
 
-                    if (this.pendingApprovalAction === 'modify') {
-                        this.products[idx] = { ...this.editingProduct, status: newStatus };
-                        // Mock History Push
-                        if (this.diffResult.rates && this.diffResult.rates.changed) {
-                            this.globalRateHistory.push({
-                                id: Date.now(),
-                                date: new Date().toLocaleString(),
-                                product_name: this.editingProduct.name,
-                                category: this.editingProduct.category_code,
-                                rate_info: this.formatDiffValue('rates', this.editingProduct.rates),
-                                operator: this.currentUser.name
-                            });
-                        }
+                    // Task 1 & 2: Set Approval State, Don't apply changes yet if modification
+                    if (this.pendingApprovalAction === 'listing') {
+                         this.products[idx].approval_state = 'listing';
+                    } else if (this.pendingApprovalAction === 'offshelf') {
+                         this.products[idx].approval_state = 'offshelf';
+                    } else if (this.pendingApprovalAction === 'modification') {
+                         this.products[idx].approval_state = 'modification';
+                         // Store pending data
+                         this.products[idx].pending_changes = JSON.parse(JSON.stringify(this.editingProduct));
                     }
                 }
                 
@@ -1424,26 +1423,67 @@
                 this.updateMonitorList();
                 this.showToast('已提交飞书审批', '🚀');
             },
+            
             mockFeishuPass(p) {
-                let nextStatus = '开放中'; 
+                // Task 2: Apply changes ONLY when approved
                 
-                if (p.status === '上架审批中') {
-                    nextStatus = '已上架待开放';
-                } else if (p.status === '修改审批中') {
-                    nextStatus = '开放中';
-                } else if (p.status === '下架审批中') {
-                    nextStatus = '已下架';
+                if (p.approval_state === 'listing') {
+                    p.status = '已上架待开放';
+                } else if (p.approval_state === 'modification') {
+                    // Apply the pending changes
+                    if (p.pending_changes) {
+                         const pending = p.pending_changes;
+                         Object.keys(pending).forEach(k => {
+                             if(k !== 'status' && k !== 'approval_state') {
+                                 p[k] = pending[k];
+                             }
+                         });
+                         
+                         // Mock History
+                         this.globalRateHistory.push({
+                            id: Date.now(),
+                            date: new Date().toLocaleString(),
+                            product_name: p.name,
+                            category: p.category_code,
+                            rate_info: this.formatDiffValue('rates', p.rates),
+                            operator: this.currentUser.name
+                        });
+                        
+                        p.pending_changes = null;
+                    }
+                } else if (p.approval_state === 'offshelf') {
+                    p.status = '已下架';
                 }
 
-                p.status = nextStatus;
+                p.approval_state = null; // Clear audit status
                 this.showToast('Mock: 飞书审批通过', '✅');
                 
-                if (['已上架待开放', '开放中'].includes(nextStatus)) {
+                // Auto Active Check
+                if (['已上架待开放', '开放中'].includes(p.status)) {
                     if (this.checkAutoActive(p)) {
                         this.showToast('产品自动上架成功', '⚡');
                     }
                 }
                 this.updateMonitorList();
+            },
+            
+            // FIX 1: Robust User Addition
+            confirmAddUser() {
+                const newUser = {
+                    id: Date.now(), // Use timestamp for unique ID
+                    name: this.newUserForm.name,
+                    role: this.newUserForm.role
+                };
+                if (!this.usersList) this.usersList = [];
+                this.usersList.push(newUser);
+                this.showAddUserModal = false;
+                this.newUserForm = { name: '', role: 'USER' };
+                this.showToast('用户添加成功', '👤');
+            },
+            
+            updateUserRole(u, event) {
+                u.role = event.target.value;
+                this.showToast('权限已更新', '🔒');
             }
         }
     }).mount('#app');
