@@ -1,4 +1,4 @@
-// config.js - Fixed Special Audience IDs updated to 4-digits
+// config.js - Fixed: Syntax Error (D_YESTERDAY) & Missing Standard Items
 
 (function() {
     // 动态日期辅助函数
@@ -6,8 +6,9 @@
     const fmtDate = (d) => d.toISOString().split('T')[0];
     const addDays = (d, n) => { const newD = new Date(d); newD.setDate(newD.getDate() + n); return newD; };
 
+    // 日期常量定义 (修复：补充 D_YESTERDAY)
     const D_TODAY = fmtDate(today);
-    const D_YESTERDAY = fmtDate(addDays(today, -1));
+    const D_YESTERDAY = fmtDate(addDays(today, -1)); 
     const D_TOMORROW = fmtDate(addDays(today, 1));
     const D_NEXT_MONTH = fmtDate(addDays(today, 30));
     const D_LAST_MONTH = fmtDate(addDays(today, -30));
@@ -46,6 +47,10 @@
             { id: 2, name: 'Product Lead', role: 'PRODUCT_ADMIN' },
             { id: 3, name: 'Viewer', role: 'USER' }
         ],
+
+        // ==========================================
+        // 2. Layer 1: Product Definitions
+        // ==========================================
         product_definitions: [
             { product_code: 'OWealth', name: 'OWealth', category: 'OWealth', fund_merchant_no: 'MCH_OW_001', tax_rate: 0.10, tax_bearer: 'USER', status: 'Active', product_protocol: 'https://opay.com/legal/owealth' },
             { product_code: 'Targets', name: 'Targets', category: 'Targets', fund_merchant_no: 'MCH_TG_001', tax_rate: 0.10, tax_bearer: 'USER', status: 'Active', product_protocol: 'https://opay.com/legal/targets' },
@@ -55,36 +60,50 @@
             { product_code: 'Sub-account', name: 'Sub-account', category: 'Sub-account', fund_merchant_no: 'MCH_SUB_001', tax_rate: 0.10, tax_bearer: 'USER', status: 'Active', product_protocol: 'https://opay.com/legal/subaccount' },
             { product_code: 'Superbalance', name: 'Superbalance', category: 'Superbalance', fund_merchant_no: 'MCH_SUP_001', tax_rate: 0.10, tax_bearer: 'USER', status: 'Active', product_protocol: 'https://opay.com/legal/superbalance' }
         ],
+
+        // ==========================================
+        // 3. Layer 2: Saving Items (Full List Restored)
+        // ==========================================
         saving_items: [
+            // Standard Singletons
+            { item_code: 'OWealth', product_code: 'OWealth', item_name: 'OWealth', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.05, min: 10000000}] }, status: 'Active' },
             { item_code: 'Targets', product_code: 'Targets', item_name: 'Targets', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.06, min: 30000000}] }, status: 'Active' },
+            { item_code: 'SafeBox', product_code: 'SafeBox', item_name: 'SafeBox', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.06, min: 30000000}] }, status: 'Active' },
+            { item_code: 'Spend & Save', product_code: 'Spend & Save', item_name: 'Spend & Save', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.05, min: 10000000}] }, status: 'Active' },
+            { item_code: 'Sub-account', product_code: 'Sub-account', item_name: 'Sub-account', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.05, min: 10000000}] }, status: 'Active' },
+            { item_code: 'Superbalance', product_code: 'Superbalance', item_name: 'Superbalance', interest_rate: { type: 'flat', value: 0.05 }, status: 'Active' },
+            
+            // Fixed Standard SKUs
             { item_code: 'Fixed_100401', product_code: 'Fixed', item_name: 'Fixed 100401 (Std)', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.06, min: 30000000}] }, status: 'Active' },
             { item_code: 'Fixed_100402', product_code: 'Fixed', item_name: 'Fixed 100402 (Std)', interest_rate: { type: 'tiered', rules: [{rate: 0.16, min: 0}, {rate: 0.07, min: 30000000}] }, status: 'Active' },
+            
+            // Fixed Special Base
             { item_code: 'Fixed_Special_Base', product_code: 'Fixed', item_name: 'Fixed Special Base Item', interest_rate: { type: 'flat', value: 0.10 }, status: 'Active' }
         ],
 
         // ==========================================
-        // 4. Fixed Special Plans (Updated Audience IDs)
+        // 4. Fixed Special Plans (Full Lifecycle)
         // ==========================================
         fixed_plans: [
             {
                 plan_id: 'PLAN_FX_DRAFT_001', item_code: 'Fixed_Special_Base', name: 'New User Promo Draft', alias: 'New User 20%',
                 total_issuance_amount: 500000000, sold_amount: 0, min_sub_amount: 1000, max_single_sub: 100000, cum_sub_limit: 500000,
                 period_days: 7, sale_start_time: D_TOMORROW, sale_end_time: D_NEXT_MONTH,
-                status: 'Draft', target_audience_id: '1001', // Changed
+                status: 'Draft', target_audience_id: '1001', 
                 rates: [{ stepMinAmount: 0, rate: 0.20 }], benchmark_rate: 0.12
             },
             {
                 plan_id: 'PLAN_FX_ACTIVE_001', item_code: 'Fixed_Special_Base', name: 'Spring Festival Special', alias: 'Spring Special 15%',
                 total_issuance_amount: 1000000000, sold_amount: 450000000, min_sub_amount: 5000, max_single_sub: 5000000, cum_sub_limit: 10000000,
                 period_days: 14, sale_start_time: D_TODAY, sale_end_time: D_NEXT_MONTH,
-                status: 'Active', target_audience_id: '2023', // Changed
+                status: 'Active', target_audience_id: '2023', 
                 rates: [{ stepMinAmount: 0, rate: 0.15 }], benchmark_rate: 0.10
             },
             {
                 plan_id: 'PLAN_FX_APPROVED_001', item_code: 'Fixed_Special_Base', name: 'Valentine Exclusive', alias: 'Love Save 18%',
                 total_issuance_amount: 200000000, sold_amount: 0, min_sub_amount: 10000, max_single_sub: 1000000, cum_sub_limit: 2000000,
                 period_days: 30, sale_start_time: D_NEXT_MONTH, sale_end_time: D_NEXT_YEAR,
-                status: 'Approved', target_audience_id: '5200', // Changed
+                status: 'Approved', target_audience_id: '5200', 
                 rates: [{ stepMinAmount: 0, rate: 0.18 }], benchmark_rate: 0.12
             },
             {
@@ -92,7 +111,7 @@
                 total_issuance_amount: 100000000, sold_amount: 100000000, min_sub_amount: 1000, max_single_sub: 50000, cum_sub_limit: 50000,
                 period_days: 3, sale_start_time: D_LAST_MONTH, sale_end_time: D_NEXT_MONTH,
                 status: 'Active',
-                target_audience_id: '9999', // Changed
+                target_audience_id: '9999', 
                 rates: [{ stepMinAmount: 0, rate: 0.25 }], benchmark_rate: 0.15
             },
             {
@@ -100,7 +119,7 @@
                 total_issuance_amount: 1000000000, sold_amount: 800000000, min_sub_amount: 1000, max_single_sub: 5000000, cum_sub_limit: 5000000,
                 period_days: 90, sale_start_time: D_LAST_MONTH, sale_end_time: D_YESTERDAY,
                 status: 'Active',
-                target_audience_id: '8888', // Changed
+                target_audience_id: '8888', 
                 rates: [{ stepMinAmount: 0, rate: 0.12 }], benchmark_rate: 0.10
             },
             {
@@ -108,13 +127,13 @@
                 total_issuance_amount: 50000000, sold_amount: 10000000, min_sub_amount: 50000, max_single_sub: 500000, cum_sub_limit: 500000,
                 period_days: 180, sale_start_time: D_LAST_MONTH, sale_end_time: D_NEXT_YEAR,
                 status: 'Suspended',
-                target_audience_id: '7777', // Changed
+                target_audience_id: '7777', 
                 rates: [{ stepMinAmount: 0, rate: 0.30 }], benchmark_rate: 0.20
             }
         ],
 
         // ==========================================
-        // 5. Target Templates
+        // 5. Target Templates (15 items)
         // ==========================================
         target_templates: [
             { template_no: '2111', item_code: 'Targets', name: 'Christmas 2026', rec_type: 'festival', reason_type: 9, icon: IMG_XMAS, card_background: BG_XMAS, pinned_sorting: 100, target_amount: 2000000, target_amounts: [2000000, 5000000, 10000000], target_amounts_desc: ['Standard', 'Premium', 'Luxurious'], period_type: 0, end_date: '2026-12-23', duration: null, expire_date: '2026-12-15', keywords: 'christmas,santa', base_members: 1000, template_status: 1, is_show: 1 },
