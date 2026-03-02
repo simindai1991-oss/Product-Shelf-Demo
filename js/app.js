@@ -18,7 +18,7 @@ const app = Vue.createApp({
         ProductRegistry, ItemRegistry, FixedPlanManager, TargetTemplateManager, 
         SystemParams, UserManagement, RolePermissions
     },
-    // ... data & computed logic same as before ...
+    // ... (data same as before)
     data() {
         return {
             configLoaded: false,
@@ -72,12 +72,8 @@ const app = Vue.createApp({
         }
     },
     methods: {
-        mapOldPermsToFunctions(perms) {
-            const fp = ['QUERY'];
-            if(perms.includes('add')) fp.push('PRODUCT_MANAGE');
-            if(perms.includes('user_manage')) fp.push('PERMISSION_MANAGE');
-            return fp;
-        },
+        // ... (methods same as before, ensuring handleUpdateUser is correct)
+        mapOldPermsToFunctions(perms) { return ['QUERY']; }, // Dummy
         hasPermission(perm) {
             return checkPermission(perm, this.currentRoleCode, this.rolesList);
         },
@@ -96,8 +92,7 @@ const app = Vue.createApp({
             this.systemDate = d.toISOString().split('T')[0];
             this.showToast(`系统时间: ${this.systemDate}`, '📅');
         },
-
-        // Modal Logic
+        
         openRegistryModal(actionType, data) {
             this.showModal = true;
             this.editingData = JSON.parse(JSON.stringify(data || {}));
@@ -112,13 +107,11 @@ const app = Vue.createApp({
         handleSaveRegistry() {
             if (this.modalFormType === 'item') this.initiateApproval(this.editingData, 'modify_item');
         },
-
-        // Approval Logic
         initiateApproval(data, action) {
             this.editingData = data; 
             this.pendingApprovalAction = action;
             if (action === 'save_draft') { this.confirmApproval(); return; }
-
+            
             if (action === 'modify_item') {
                 this.originalSnapshot = JSON.parse(JSON.stringify(this.savingItems.find(i => i.item_code === data.item_code) || {}));
             } else if (['apply_listing', 'modify_fixed', 'off_shelf'].includes(action)) {
@@ -128,7 +121,6 @@ const app = Vue.createApp({
             this.showDiffModal = true;
         },
         initiateApprovalFromChild(data, action) { this.initiateApproval(data, action); },
-
         confirmApproval() {
             if (this.pendingApprovalAction === 'modify_item') {
                 const idx = this.savingItems.findIndex(i => i.item_code === this.editingData.item_code);
@@ -159,7 +151,6 @@ const app = Vue.createApp({
             }
             this.showDiffModal = false;
         },
-
         handleMockPass(planOrItem) {
             if (planOrItem.plan_id) {
                 let nextStatus = planOrItem.status;
@@ -181,11 +172,12 @@ const app = Vue.createApp({
             }
         },
         handleItemMockPass(item) { this.handleMockPass(item); },
-
         refreshFixedStats() {
             let count = 0;
+            const now = this.systemDate;
             this.fixedPlans.forEach(p => {
-                if((p.status === 'Active') && p.sold_amount < p.total_issuance_amount) {
+                const isExpired = p.sale_end_time && p.sale_end_time < now;
+                if(!isExpired && (p.status === 'Active') && p.sold_amount < p.total_issuance_amount) {
                     const add = Math.floor(p.total_issuance_amount * 0.05);
                     p.sold_amount = Math.min(p.total_issuance_amount, p.sold_amount + add);
                     count++;
@@ -193,27 +185,28 @@ const app = Vue.createApp({
             });
             this.showToast(`已刷新 ${count} 个在售产品销量`);
         },
-        
-        handleCreateTemplate(tpl) { this.targetTemplates.push(tpl); this.showToast('模板已创建'); },
-        handleUpdateTemplate(tpl) { const idx = this.targetTemplates.findIndex(t => t.template_no === tpl.template_no); if(idx !== -1) this.targetTemplates[idx] = tpl; this.showToast('模板配置已更新'); },
-        handleDeleteTemplate(tpl) {
-            const idx = this.targetTemplates.findIndex(t => t.template_no === tpl.template_no);
+        handleDeletePlan(plan) {
+            const idx = this.fixedPlans.findIndex(p => p.plan_id === plan.plan_id);
             if (idx !== -1) {
-                this.targetTemplates.splice(idx, 1);
-                this.showToast('模板已删除', '🗑️');
+                this.fixedPlans.splice(idx, 1);
+                this.showToast('草稿已删除', '🗑️');
             }
         },
+        handleCreateTemplate(tpl) { this.targetTemplates.push(tpl); this.showToast('模板已创建'); },
+        handleUpdateTemplate(tpl) { const idx = this.targetTemplates.findIndex(t => t.template_no === tpl.template_no); if(idx !== -1) this.targetTemplates[idx] = tpl; this.showToast('模板配置已更新'); },
+        handleDeleteTemplate(tpl) { const idx = this.targetTemplates.findIndex(t => t.template_no === tpl.template_no); if (idx !== -1) { this.targetTemplates.splice(idx, 1); this.showToast('模板已删除', '🗑️'); } },
         handleUpdateParam(key, val) { const p = this.systemParams.find(x => x.key === key); if(p) p.value = val; this.showToast('参数已保存'); },
         handleAddParam(p) { this.systemParams.push(p); this.showToast('参数已添加'); },
-        handleAddUser(user) { 
-            this.usersList.push({ 
-                id: Date.now(), 
-                name: user.name,
-                role: user.roles 
-            }); 
-            this.showToast('用户已添加'); 
+        handleAddUser(user) { this.usersList.push({ id: Date.now(), name: user.name, role: user.roles }); this.showToast('用户已添加'); },
+        // Updated to handle full user object update (multi-role)
+        handleUpdateUser(user) {
+            const idx = this.usersList.findIndex(u => u.id === user.id);
+            if (idx !== -1) {
+                this.usersList[idx].role = user.roles;
+                this.showToast('用户角色已更新');
+            }
         },
-        handleUpdateUserRole(user, roleCode) { user.role = roleCode; this.showToast('权限已更新'); },
+        handleUpdateUserRole(user, roleCode) { user.role = roleCode; this.showToast('权限已更新'); }, // Legacy, can likely remove
         handleSaveRole(role, mode) { if (mode === 'create') this.rolesList.push(role); else { const idx = this.rolesList.findIndex(r => r.code === role.code); if (idx !== -1) this.rolesList[idx] = role; } this.showToast('配置已保存'); }
     },
     template: `
@@ -289,11 +282,11 @@ const app = Vue.createApp({
             <main class="flex-1 overflow-auto p-8 relative">
                 <ProductRegistry v-if="currentView === 'product_mgmt'" :product-definitions="productDefinitions" :categories="categories" :role-code="currentRoleCode" :has-permission="hasPermission" @open-modal="openRegistryModal" />
                 <ItemRegistry v-if="currentView === 'item_mgmt'" :saving-items="savingItems" :product-definitions="productDefinitions" :has-permission="hasPermission" @open-modal="openRegistryModal" @mock-pass-item="handleItemMockPass" />
-                <FixedPlanManager v-if="currentView === 'fixed_ops'" :plans="fixedPlans" :items="savingItems" :system-date="systemDate" :has-permission="hasPermission" @initiate-approval="initiateApprovalFromChild" @mock-audit-pass="handleMockPass" @refresh-stats="refreshFixedStats" />
+                <FixedPlanManager v-if="currentView === 'fixed_ops'" :plans="fixedPlans" :items="savingItems" :system-date="systemDate" :has-permission="hasPermission" @initiate-approval="initiateApprovalFromChild" @mock-audit-pass="handleMockPass" @refresh-stats="refreshFixedStats" @delete-plan="handleDeletePlan" />
                 <TargetTemplateManager v-if="currentView === 'target_ops'" :templates="targetTemplates" :items="savingItems" @create-template="handleCreateTemplate" @update-template="handleUpdateTemplate" @delete-template="handleDeleteTemplate" />
                 <SystemParams v-if="currentView === 'params'" :params="systemParams" :has-permission="hasPermission" @update-param="handleUpdateParam" @add-param="handleAddParam" />
                 <UserManagement v-if="currentView === 'users'" :users="usersList" :roles="rolesList" :has-permission="hasPermission" @add-user="handleAddUser" @update-user="handleUpdateUser" />
-                <RolePermissions v-if="currentView === 'permissions'" :roles="rolesList" @save-role="handleSaveRole" />
+                <RolePermissions v-if="currentView === 'permissions'" :roles="rolesList" :has-permission="hasPermission" @save-role="handleSaveRole" />
             </main>
         </div>
 

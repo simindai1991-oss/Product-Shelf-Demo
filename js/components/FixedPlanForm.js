@@ -13,7 +13,6 @@ export default {
                 { id: 'limits', name: '额度规则' },
                 { id: 'dates', name: '销售周期' }
             ],
-            // 本地临时变量，用于处理 Benchmark 的百分比显示
             displayBenchmark: 0
         }
     },
@@ -24,18 +23,17 @@ export default {
         },
         modalTitle() {
             if (this.mode === 'view') return 'Fixed Special 详情 (View Only)';
-            return this.mode === 'create' ? '发行 Fixed Special 产品' : '编辑产品要素';
+            // 修改弹窗标题：发行 Fixed Special 单品 / 编辑单品要素
+            return this.mode === 'create' ? '发行 Fixed Special 单品' : '编辑单品要素';
         },
         isReadOnly() {
             return this.mode === 'view';
         }
     },
     created() {
-        // Init Rates
         if (!this.editingPlan.rates || this.editingPlan.rates.length === 0) {
             this.editingPlan.rates = [{ stepMinAmount: 0, rate: 0, displayRate: 0 }];
         }
-        // Init Benchmark Display (Decimal -> Percentage)
         if (this.editingPlan.benchmark_rate !== undefined) {
             this.displayBenchmark = parseFloat((this.editingPlan.benchmark_rate * 100).toFixed(2));
         } else {
@@ -69,7 +67,8 @@ export default {
                 <div v-show="activeTab === 'basic'" class="space-y-4 bg-white p-5 rounded border border-gray-200">
                     <div class="grid grid-cols-4 gap-4">
                         <div class="form-group col-span-2">
-                            <label class="label-std">产品名称 (Product Name) <span class="text-red-500">*</span></label>
+                            <!-- 已修改标签：单品名称 (Item Name) -->
+                            <label class="label-std">单品名称 (Item Name) <span class="text-red-500">*</span></label>
                             <input v-model="editingPlan.name" class="input-std" placeholder="内部管理名称" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group col-span-2">
@@ -77,11 +76,12 @@ export default {
                             <input v-model="editingPlan.alias" class="input-std" placeholder="App端展示名称" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group col-span-2">
-                            <label class="label-std">定向人群ID</label>
-                            <input v-model="editingPlan.target_audience_id" class="input-std" placeholder="e.g. CROWD_VIP_001" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
+                            <label class="label-std">定向人群ID (4位数字)</label>
+                            <input v-model="editingPlan.target_audience_id" class="input-std" placeholder="e.g. 2350" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group col-span-2">
-                            <label class="label-std">Plan ID</label>
+                            <!-- 已修改标签：Item ID -->
+                            <label class="label-std">Item ID</label>
                             <input v-model="editingPlan.plan_id" disabled class="input-std bg-gray-100 text-gray-500 font-mono">
                         </div>
                     </div>
@@ -101,7 +101,7 @@ export default {
                             <p class="text-[10px] text-gray-400 mt-1">对客展示收益率</p>
                         </div>
                         
-                        <!-- Benchmark Input (Same Style) -->
+                        <!-- Benchmark Input -->
                         <div class="form-group">
                             <label class="label-std">Benchmark 利率 (Cost Base)</label>
                             <div class="relative">
@@ -118,7 +118,7 @@ export default {
                 <div v-show="activeTab === 'limits'" class="space-y-4 bg-white p-5 rounded border border-gray-200">
                     <div class="grid grid-cols-3 gap-4">
                         <div class="form-group">
-                            <label class="label-std">发行总规模 <span class="text-red-500">*</span></label>
+                            <label class="label-std">发行总规模 (₦) <span class="text-red-500">*</span></label>
                             <input type="number" v-model="editingPlan.total_issuance_amount" class="input-std font-mono font-bold text-gray-700" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group">
@@ -126,15 +126,15 @@ export default {
                             <input type="number" v-model="editingPlan.period_days" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group">
-                            <label class="label-std">起购金额 (Min) <span class="text-red-500">*</span></label>
+                            <label class="label-std">起购金额 (₦) <span class="text-red-500">*</span></label>
                             <input type="number" v-model="editingPlan.min_sub_amount" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group">
-                            <label class="label-std">单笔上限 (Max Single) <span class="text-red-500">*</span></label>
+                            <label class="label-std">单笔上限 (₦) <span class="text-red-500">*</span></label>
                             <input type="number" v-model="editingPlan.max_single_sub" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group">
-                            <label class="label-std">累计限额 (Cum Limit) <span class="text-red-500">*</span></label>
+                            <label class="label-std">累计限额 (₦) <span class="text-red-500">*</span></label>
                             <input type="number" v-model="editingPlan.cum_sub_limit" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                     </div>

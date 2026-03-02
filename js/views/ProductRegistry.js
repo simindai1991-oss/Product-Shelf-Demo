@@ -37,7 +37,7 @@ export default {
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">产品名称</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">所属品类</th>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">状态</th>
+                            <!-- Removed Status Header -->
                             <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">操作</th>
                         </tr>
                     </thead>
@@ -52,11 +52,7 @@ export default {
                                     {{ p.category }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
-                                <span :class="statusBadgeClass(p.status)" class="px-2 py-0.5 text-xs rounded border font-bold">
-                                    {{ p.status }}
-                                </span>
-                            </td>
+                            <!-- Removed Status Data Cell -->
                             <td class="px-6 py-4 text-right">
                                 <button @click="viewProductDef(p)" class="text-gray-500 hover:text-gray-900 font-bold text-xs border border-transparent hover:border-gray-300 px-2 py-1 rounded transition">
                                     查看详情

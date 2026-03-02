@@ -4,7 +4,7 @@ import { formatMoney, formatRateDisplay } from '../utils.js';
 export default {
     components: { FixedPlanForm },
     props: ['plans', 'items', 'systemDate', 'hasPermission'],
-    emits: ['initiate-approval', 'mock-audit-pass', 'refresh-stats'],
+    emits: ['initiate-approval', 'mock-audit-pass', 'refresh-stats', 'delete-plan'],
     data() {
         return { 
             showModal: false, 
@@ -51,11 +51,9 @@ export default {
                 return '开放中'; 
             }
             if (p.status === 'Suspended' || p.status === 'Pending_OffShelf') return '已下架';
-            
             const now = this.systemDate;
             if (p.sale_end_time && p.sale_end_time < now) return '已过期';
             if (p.sold_amount >= p.total_issuance_amount) return '已售罄';
-            
             if (p.status === 'Active' || p.status === 'Pending_Modification') return '开放中';
             if (p.status === 'Approved') {
                  if (p.sale_start_time && p.sale_start_time <= now) return '开放中';
@@ -99,10 +97,9 @@ export default {
             this.showModal = true;
         },
         handleSave() {
-            // View mode safe guard
-            if (this.modalMode === 'view') return;
+            if (this.modalMode === 'view') { this.showModal = false; return; }
+            if (!this.editingPlan.name) return alert('请输入单品名称');
 
-            if (!this.editingPlan.name) return alert('请输入产品名称');
             if (this.modalMode === 'create') {
                 this.$emit('initiate-approval', this.editingPlan, 'save_draft'); 
             } else {
@@ -116,9 +113,14 @@ export default {
             this.$emit('initiate-approval', planCopy, 'apply_listing');
         },
         applyOffShelf(plan) {
-            if (!confirm('确定要申请下架该产品吗？')) return;
+            if (!confirm('确定要申请下架该单品吗？')) return;
             const planCopy = JSON.parse(JSON.stringify(plan));
             this.$emit('initiate-approval', planCopy, 'off_shelf');
+        },
+        handleDeletePlan(plan) {
+            if (!confirm('确定要删除该草稿吗？此操作不可恢复。')) return;
+            this.$emit('delete-plan', plan);
+            this.showModal = false;
         },
         mockPass(plan) { this.$emit('mock-audit-pass', plan); },
         refreshStatsInternal() { this.$emit('refresh-stats'); }
@@ -138,8 +140,9 @@ export default {
                     <button @click="refreshStatsInternal" class="bg-white border hover:bg-gray-50 text-gray-600 px-3 py-2 rounded shadow-sm text-sm font-bold transition">
                         ↻ 刷新销量 (+5%)
                     </button>
+                    <!-- 修改按钮文案为：单品发行 -->
                     <button v-if="hasPermission('FIXED_OPS:SPECIAL_PLAN:CREATE')" @click="initCreate" class="bg-opay hover:bg-opay-hover text-white px-4 py-2 rounded shadow font-bold flex items-center transition">
-                        <span class="mr-1 text-lg">+</span> 发行产品
+                        <span class="mr-1 text-lg">+</span> 单品发行
                     </button>
                 </div>
             </div>
@@ -148,26 +151,24 @@ export default {
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <!-- 调整了列宽比例 -->
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-1/4">产品信息</th>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-1/6">销售周期</th> 
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-1/6">利率</th>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-1/4">销售进度</th>
-                            <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase w-1/6">状态 / 操作</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-[25%]">单品信息</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-[15%]">销售周期</th> 
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-[15%]">利率</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-[25%]">销售进度</th>
+                            <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase w-[20%]">状态 / 操作</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         <tr v-for="plan in filteredPlans" :key="plan.plan_id" class="hover:bg-gray-50 transition">
                             <td class="px-6 py-3 cursor-pointer" @click="openEdit(plan)">
-                                <div class="font-bold text-gray-900 text-sm">{{ plan.name }}</div>
-                                <div class="text-xs text-gray-500 mt-0.5">{{ plan.alias }}</div>
+                                <div class="font-bold text-gray-900 text-sm truncate" :title="plan.name">{{ plan.name }}</div>
+                                <div class="text-xs text-gray-500 mt-0.5 truncate" :title="plan.alias">{{ plan.alias }}</div>
                                 <div class="text-[10px] text-gray-400 mt-1 font-mono">{{ plan.plan_id }}</div>
                             </td>
-                            <!-- 独立的销售周期列 -->
                             <td class="px-6 py-3">
-                                <div class="text-xs text-gray-600 font-mono flex flex-col gap-0.5">
+                                <div class="flex flex-col text-xs font-mono text-gray-600 leading-tight">
                                     <span>{{ plan.sale_start_time }}</span>
-                                    <span class="text-gray-400 text-[10px]">至</span>
+                                    <span class="text-gray-400 text-[10px] transform scale-75 origin-left">至</span>
                                     <span>{{ plan.sale_end_time }}</span>
                                 </div>
                             </td>
@@ -196,16 +197,18 @@ export default {
                                     </div>
 
                                     <div v-else class="flex gap-2 justify-end">
-                                        <!-- Edit allowed only if NOT Expired AND NOT Suspended -->
                                         <button v-if="hasPermission('FIXED_OPS:SPECIAL_PLAN:EDIT') && !['已过期', '已下架'].includes(plan.displayStatus)" 
                                                 @click="openEdit(plan)" class="text-gray-600 hover:text-opay text-xs font-bold">编辑</button>
-                                        <!-- Otherwise show View -->
                                         <button v-else @click="openView(plan)" class="text-gray-500 hover:text-gray-800 text-xs">查看</button>
 
                                         <button v-if="plan.displayStatus === '草稿' && hasPermission('FIXED_OPS:SPECIAL_PLAN:PUBLISH')" 
                                                 @click="applyListing(plan)" 
                                                 class="text-opay hover:text-green-800 text-xs font-bold border border-green-200 px-2 py-0.5 rounded bg-green-50">上架</button>
                                         
+                                        <button v-if="plan.displayStatus === '草稿' && hasPermission('FIXED_OPS:SPECIAL_PLAN:EDIT')" 
+                                                @click="handleDeletePlan(plan)" 
+                                                class="text-gray-400 hover:text-red-600 text-xs font-bold border border-gray-200 hover:border-red-200 px-2 py-0.5 rounded bg-gray-50 hover:bg-red-50">删除</button>
+
                                         <button v-if="['开放中', '已上架待开放', '已售罄'].includes(plan.displayStatus) && hasPermission('FIXED_OPS:SPECIAL_PLAN:OFFSHELF')" 
                                                 @click="applyOffShelf(plan)" 
                                                 class="text-red-600 hover:text-red-800 text-xs font-bold border border-red-200 px-2 py-0.5 rounded bg-red-50">下架</button>
@@ -216,7 +219,7 @@ export default {
                     </tbody>
                 </table>
             </div>
-            <FixedPlanForm v-if="showModal" v-model="editingPlan" :mode="modalMode" :fixed-items="fixedSkus" @close="showModal = false" @save="handleSave" />
+            <FixedPlanForm v-if="showModal" v-model="editingPlan" :mode="modalMode" :fixed-items="fixedSkus" @close="showModal = false" @save="handleSave" @delete="handleDeletePlan" />
         </div>
     `
 };

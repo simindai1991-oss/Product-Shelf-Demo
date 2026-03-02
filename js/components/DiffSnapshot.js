@@ -13,7 +13,14 @@ export default {
         diffMap() {
             const map = {};
             const keys = new Set([...Object.keys(this.originalSnapshot), ...Object.keys(this.editingProduct)]);
-            const ignoredKeys = ['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress'];
+            
+            // 针对所有情况忽略的公共字段
+            let ignoredKeys = ['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress'];
+            
+            // 单品管理 (modify_item) 专属忽略字段
+            if (this.actionType === 'modify_item') {
+                ignoredKeys = ignoredKeys.concat(['parentName', 'category', 'isPending']);
+            }
             
             keys.forEach(key => {
                 if (ignoredKeys.includes(key)) return;
@@ -24,6 +31,7 @@ export default {
             });
             return map;
         },
+        // 判断是否为 Fixed Special 相关操作 (只有 Fixed Special 才有成本预算和文件上传)
         isFixedSpecial() {
             return ['issue_fixed', 'modify_fixed', 'apply_listing', 'off_shelf'].includes(this.actionType);
         },
@@ -37,6 +45,11 @@ export default {
                 return newRate > oldRate ? 500 : 0;
             }
             return 0;
+        },
+        // 判断是否可以提交审批
+        canSubmit() {
+            // 申请说明必须填写（去掉空格后不为空）
+            return this.approvalNote.trim().length > 0;
         }
     },
     methods: {
@@ -88,7 +101,8 @@ export default {
                                 <span class="col-span-2 text-gray-600">{{ originalSnapshot.status || 'N/A (New)' }}</span>
                             </div>
                             <template v-for="(val, key) in originalSnapshot" :key="key">
-                                <div v-if="key !== 'status' && !['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress'].includes(key)" 
+                                <!-- 在模板中也过滤掉 isPending, parentName, category 以防万一 -->
+                                <div v-if="key !== 'status' && !['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress', 'isPending', 'parentName', 'category'].includes(key)" 
                                      class="grid grid-cols-3 gap-2 border-b border-gray-100 pb-1"
                                      :class="diffMap[key] ? 'bg-yellow-50' : ''">
                                     <span class="text-gray-400 font-bold break-all">{{ getFieldName(key) }}</span>
@@ -116,7 +130,7 @@ export default {
                                 <span class="col-span-2 font-bold" :class="originalSnapshot.status !== targetStatus ? 'text-red-600' : 'text-gray-600'">{{ targetStatus }}</span>
                             </div>
                             <template v-for="(val, key) in editingProduct" :key="key">
-                                <div v-if="key !== 'status' && !['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress'].includes(key)" 
+                                <div v-if="key !== 'status' && !['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress', 'isPending', 'parentName', 'category'].includes(key)" 
                                      class="grid grid-cols-3 gap-2 border-b border-gray-100 pb-1"
                                      :class="diffMap[key] ? 'bg-yellow-100 -mx-2 px-2 rounded' : ''">
                                     <span class="text-gray-400 font-bold break-all">{{ getFieldName(key) }}</span>
@@ -130,10 +144,12 @@ export default {
                             
                             <!-- Reason -->
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 mb-1">申请说明 (Reason)</label>
+                                <label class="block text-xs font-bold text-gray-500 mb-1">申请说明 (Reason) <span class="text-red-500">*</span></label>
                                 <textarea v-model="approvalNote" 
-                                          class="w-full border border-gray-300 rounded p-2 text-xs h-20 focus:border-opay outline-none resize-none" 
-                                          placeholder="请输入申请原因说明..."></textarea>
+                                          class="w-full border rounded p-2 text-xs h-20 outline-none resize-none transition-colors" 
+                                          :class="approvalNote.trim().length === 0 ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-opay'"
+                                          placeholder="必填项：请输入本次申请变更/上架的详细说明..."></textarea>
+                                <p v-if="approvalNote.trim().length === 0" class="text-red-500 text-[10px] mt-1">请输入申请说明以继续操作</p>
                             </div>
 
                             <!-- Attachments - Only for Fixed Special -->
@@ -166,7 +182,10 @@ export default {
                 <!-- Footer -->
                 <div class="p-4 border-t flex justify-end gap-3 shrink-0 bg-gray-50">
                     <button @click="$emit('close')" class="px-4 py-2 text-gray-600 font-bold hover:text-gray-800 transition">返回修改</button>
-                    <button @click="$emit('confirm')" class="px-6 py-2 bg-opay hover:bg-opay-hover text-white font-bold rounded shadow flex items-center gap-2 transition" :disabled="!approvalNote && false">
+                    <button @click="$emit('confirm')" 
+                            class="px-6 py-2 font-bold rounded shadow flex items-center gap-2 transition" 
+                            :disabled="!canSubmit"
+                            :class="!canSubmit ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-opay hover:bg-opay-hover text-white'">
                         <span>发起审批</span>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </button>
