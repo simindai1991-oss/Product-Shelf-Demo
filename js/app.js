@@ -18,13 +18,17 @@ const app = Vue.createApp({
         ProductRegistry, ItemRegistry, FixedPlanManager, TargetTemplateManager, 
         SystemParams, UserManagement, RolePermissions
     },
-    // ... (data same as before)
     data() {
+        // 初始化包含时分秒的系统时间
+        const now = new Date();
+        const pad = n => n.toString().padStart(2, '0');
+        const sysDateTime = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
         return {
             configLoaded: false,
             currentRoleCode: 'SUPER_ADMIN',
             currentView: 'product_mgmt', 
-            systemDate: new Date().toISOString().split('T')[0],
+            systemDate: sysDateTime, // 升级为秒级精度
 
             productDefinitions: [], savingItems: [], fixedPlans: [], targetTemplates: [],
             rolesList: [], categories: [], systemParams: [], usersList: [],
@@ -72,7 +76,6 @@ const app = Vue.createApp({
         }
     },
     methods: {
-        // ... (methods same as before, ensuring handleUpdateUser is correct)
         mapOldPermsToFunctions(perms) { return ['QUERY']; }, // Dummy
         hasPermission(perm) {
             return checkPermission(perm, this.currentRoleCode, this.rolesList);
@@ -89,8 +92,9 @@ const app = Vue.createApp({
         addDays(n) {
             const d = new Date(this.systemDate);
             d.setDate(d.getDate() + n);
-            this.systemDate = d.toISOString().split('T')[0];
-            this.showToast(`系统时间: ${this.systemDate}`, '📅');
+            const pad = num => num.toString().padStart(2, '0');
+            this.systemDate = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+            this.showToast(`系统时间: ${this.systemDate.replace('T', ' ')}`, '📅');
         },
         
         openRegistryModal(actionType, data) {
@@ -198,7 +202,6 @@ const app = Vue.createApp({
         handleUpdateParam(key, val) { const p = this.systemParams.find(x => x.key === key); if(p) p.value = val; this.showToast('参数已保存'); },
         handleAddParam(p) { this.systemParams.push(p); this.showToast('参数已添加'); },
         handleAddUser(user) { this.usersList.push({ id: Date.now(), name: user.name, role: user.roles }); this.showToast('用户已添加'); },
-        // Updated to handle full user object update (multi-role)
         handleUpdateUser(user) {
             const idx = this.usersList.findIndex(u => u.id === user.id);
             if (idx !== -1) {
@@ -206,7 +209,7 @@ const app = Vue.createApp({
                 this.showToast('用户角色已更新');
             }
         },
-        handleUpdateUserRole(user, roleCode) { user.role = roleCode; this.showToast('权限已更新'); }, // Legacy, can likely remove
+        handleUpdateUserRole(user, roleCode) { user.role = roleCode; this.showToast('权限已更新'); },
         handleSaveRole(role, mode) { if (mode === 'create') this.rolesList.push(role); else { const idx = this.rolesList.findIndex(r => r.code === role.code); if (idx !== -1) this.rolesList[idx] = role; } this.showToast('配置已保存'); }
     },
     template: `
@@ -297,7 +300,8 @@ const app = Vue.createApp({
         <div class="fixed bottom-4 left-4 z-[100] bg-gray-800 text-white p-3 rounded-lg shadow-xl opacity-90 hover:opacity-100 transition">
             <div class="text-[10px] text-gray-400 mb-1 font-bold uppercase">Time Travel</div>
             <div class="flex items-center gap-2">
-                <div class="font-mono text-sm bg-black px-2 py-1 rounded">{{ systemDate }}</div>
+                <!-- 格式化展示时间，更美观 -->
+                <div class="font-mono text-sm bg-black px-2 py-1 rounded">{{ systemDate.replace('T', ' ') }}</div>
                 <button @click="addDays(1)" class="bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded text-xs">+1D</button>
                 <button @click="addDays(30)" class="bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded text-xs">+1M</button>
             </div>

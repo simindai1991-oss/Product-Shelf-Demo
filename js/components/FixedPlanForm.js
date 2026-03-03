@@ -3,7 +3,7 @@ import Modal from './Modal.js';
 export default {
     components: { Modal },
     props: ['modelValue', 'mode', 'fixedItems'],
-    emits: ['update:modelValue', 'close', 'save'],
+    emits: ['update:modelValue', 'close', 'save', 'delete'],
     data() {
         return {
             activeTab: 'basic',
@@ -23,7 +23,6 @@ export default {
         },
         modalTitle() {
             if (this.mode === 'view') return 'Fixed Special 详情 (View Only)';
-            // 修改弹窗标题：发行 Fixed Special 单品 / 编辑单品要素
             return this.mode === 'create' ? '发行 Fixed Special 单品' : '编辑单品要素';
         },
         isReadOnly() {
@@ -67,7 +66,6 @@ export default {
                 <div v-show="activeTab === 'basic'" class="space-y-4 bg-white p-5 rounded border border-gray-200">
                     <div class="grid grid-cols-4 gap-4">
                         <div class="form-group col-span-2">
-                            <!-- 已修改标签：单品名称 (Item Name) -->
                             <label class="label-std">单品名称 (Item Name) <span class="text-red-500">*</span></label>
                             <input v-model="editingPlan.name" class="input-std" placeholder="内部管理名称" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
@@ -80,7 +78,6 @@ export default {
                             <input v-model="editingPlan.target_audience_id" class="input-std" placeholder="e.g. 2350" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group col-span-2">
-                            <!-- 已修改标签：Item ID -->
                             <label class="label-std">Item ID</label>
                             <input v-model="editingPlan.plan_id" disabled class="input-std bg-gray-100 text-gray-500 font-mono">
                         </div>
@@ -90,7 +87,6 @@ export default {
                 <!-- Tab 2: Rates -->
                 <div v-show="activeTab === 'rates'" class="space-y-4 bg-white p-5 rounded border border-gray-200">
                     <div class="grid grid-cols-2 gap-6">
-                        <!-- APY Input -->
                         <div class="form-group">
                             <label class="label-std">年化利率 (APY) <span class="text-red-500">*</span></label>
                             <div class="relative">
@@ -101,7 +97,6 @@ export default {
                             <p class="text-[10px] text-gray-400 mt-1">对客展示收益率</p>
                         </div>
                         
-                        <!-- Benchmark Input -->
                         <div class="form-group">
                             <label class="label-std">Benchmark 利率 (Cost Base)</label>
                             <div class="relative">
@@ -140,22 +135,23 @@ export default {
                     </div>
                 </div>
 
-                <!-- Tab 4: Dates -->
+                <!-- Tab 4: Dates (Updated to datetime-local) -->
                 <div v-show="activeTab === 'dates'" class="space-y-4 bg-white p-5 rounded border border-gray-200">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="form-group">
-                            <label class="label-std">申购开始日期 <span class="text-red-500">*</span></label>
-                            <input type="date" v-model="editingPlan.sale_start_time" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
+                            <label class="label-std">申购开始时间 (精确到秒) <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" step="1" v-model="editingPlan.sale_start_time" class="input-std font-mono" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group">
-                            <label class="label-std">申购截止日期 <span class="text-red-500">*</span></label>
-                            <input type="date" v-model="editingPlan.sale_end_time" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
+                            <label class="label-std">申购截止时间 (精确到秒) <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" step="1" v-model="editingPlan.sale_end_time" class="input-std font-mono" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                     </div>
                 </div>
 
             </div>
             <template #footer>
+                <button v-if="!isReadOnly && editingPlan.status === 'Draft'" @click="$emit('delete', editingPlan)" class="mr-auto px-4 py-2 text-red-600 hover:bg-red-50 rounded text-sm font-bold transition">删除草稿</button>
                 <button @click="$emit('close')" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded text-sm font-bold transition">
                     {{ isReadOnly ? '关闭' : '取消' }}
                 </button>

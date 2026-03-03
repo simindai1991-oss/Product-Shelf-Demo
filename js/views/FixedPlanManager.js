@@ -71,12 +71,19 @@ export default {
         },
         
         initCreate() {
+            // Generate a full datetime string for next year defaults
+            const d = new Date(this.systemDate);
+            d.setFullYear(d.getFullYear() + 1);
+            const pad = n => n.toString().padStart(2, '0');
+            const nextYearStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
             this.modalMode = 'create';
             this.editingPlan = { 
                 plan_id: 'PLAN_' + Date.now(), item_code: 'Fixed_Special_Base', name: 'Fixed Special New', alias: 'New Promo',
                 total_issuance_amount: 100000000, sold_amount: 0, min_sub_amount: 5000, max_single_sub: 1000000, cum_sub_limit: 5000000,
                 period_days: 14, status: 'Draft', 
-                sale_start_time: this.systemDate, sale_end_time: '2026-12-31',
+                sale_start_time: this.systemDate, 
+                sale_end_time: nextYearStr,
                 rates: [{ stepMinAmount: 0, rate: 0.15, displayRate: 15 }],
                 benchmark_rate: 0.10
             };
@@ -140,7 +147,6 @@ export default {
                     <button @click="refreshStatsInternal" class="bg-white border hover:bg-gray-50 text-gray-600 px-3 py-2 rounded shadow-sm text-sm font-bold transition">
                         ↻ 刷新销量 (+5%)
                     </button>
-                    <!-- 修改按钮文案为：单品发行 -->
                     <button v-if="hasPermission('FIXED_OPS:SPECIAL_PLAN:CREATE')" @click="initCreate" class="bg-opay hover:bg-opay-hover text-white px-4 py-2 rounded shadow font-bold flex items-center transition">
                         <span class="mr-1 text-lg">+</span> 单品发行
                     </button>
@@ -152,9 +158,9 @@ export default {
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-[25%]">单品信息</th>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-[15%]">销售周期</th> 
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-[20%]">销售周期</th> 
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-[15%]">利率</th>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-[25%]">销售进度</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase w-[20%]">销售进度</th>
                             <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase w-[20%]">状态 / 操作</th>
                         </tr>
                     </thead>
@@ -165,11 +171,12 @@ export default {
                                 <div class="text-xs text-gray-500 mt-0.5 truncate" :title="plan.alias">{{ plan.alias }}</div>
                                 <div class="text-[10px] text-gray-400 mt-1 font-mono">{{ plan.plan_id }}</div>
                             </td>
+                            <!-- 支持秒级时间展示 -->
                             <td class="px-6 py-3">
-                                <div class="flex flex-col text-xs font-mono text-gray-600 leading-tight">
-                                    <span>{{ plan.sale_start_time }}</span>
-                                    <span class="text-gray-400 text-[10px] transform scale-75 origin-left">至</span>
-                                    <span>{{ plan.sale_end_time }}</span>
+                                <div class="flex flex-col text-[10px] font-mono text-gray-600 leading-tight">
+                                    <span>{{ plan.sale_start_time ? plan.sale_start_time.replace('T', ' ') : '' }}</span>
+                                    <span class="text-gray-400 scale-75 origin-left">至</span>
+                                    <span>{{ plan.sale_end_time ? plan.sale_end_time.replace('T', ' ') : '' }}</span>
                                 </div>
                             </td>
                             <td class="px-6 py-3">
