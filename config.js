@@ -65,8 +65,9 @@
             { product_code: 'Superbalance', name: 'Superbalance', category: 'Superbalance', fund_merchant_no: 'MCH_SUP_001', tax_rate: 0.10, tax_bearer: 'USER', status: 'Active', product_protocol: 'https://opay.com/legal/superbalance' }
         ],
         saving_items: [
+            // Standard Singletons
             { item_code: 'OWealth', product_code: 'OWealth', item_name: 'OWealth', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.05, min: 10000000}] }, status: 'Active' },
-            { item_code: 'Targets', product_code: 'Targets', item_name: 'Targets', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.06, min: 30000000}] }, status: 'Active' },
+            { item_code: 'Targets', product_code: 'Targets', item_name: 'Targets', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.06, min: 30000000}] }, status: 'Active', sync_status: 'SYNCING' },
             { item_code: 'SafeBox', product_code: 'SafeBox', item_name: 'SafeBox', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.06, min: 30000000}] }, status: 'Active' },
             { item_code: 'Spend & Save', product_code: 'Spend & Save', item_name: 'Spend & Save', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.05, min: 10000000}] }, status: 'Active' },
             { item_code: 'Sub-account', product_code: 'Sub-account', item_name: 'Sub-account', interest_rate: { type: 'tiered', rules: [{rate: 0.15, min: 0}, {rate: 0.05, min: 10000000}] }, status: 'Active' },
@@ -132,8 +133,7 @@
             { code: 'Superbalance', name: 'Superbalance' }
         ],
         system_params: [
-            { key: 'GLOBAL_RISK_RATE', value: '0.12', desc: '全局风控利率基准' },
-            { key: 'APPROVAL_FLOW_ID', value: 'FS_8832_OPAY', desc: '飞书审批流定义ID' }
+            { key: 'EXAMPLE_VARIABLE', value: '1.0', desc: 'Example Parameter' }
         ]
     };
 })();

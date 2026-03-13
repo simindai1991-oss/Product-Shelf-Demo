@@ -77,7 +77,7 @@ export default {
                             <label class="label-std">定向人群ID (4位数字)</label>
                             <input v-model="editingPlan.target_audience_id" class="input-std" placeholder="e.g. 2350" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
-                        <div class="form-group col-span-2">
+                        <div class="form-group col-span-2" v-if="mode !== 'create'">
                             <label class="label-std">Item ID</label>
                             <input v-model="editingPlan.plan_id" disabled class="input-std bg-gray-100 text-gray-500 font-mono">
                         </div>

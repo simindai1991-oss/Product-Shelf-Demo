@@ -89,7 +89,8 @@ export default {
                 target_amounts_desc: [],
                 period_type: 2,
                 template_status: 1,
-                is_show: 1
+                is_show: 1,
+                expire_date: '2099-12-31'
             }; 
             this.showModal = true; 
         },

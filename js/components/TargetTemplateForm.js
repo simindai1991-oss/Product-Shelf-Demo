@@ -13,12 +13,10 @@ export default {
                 { id: 'money', name: '金额配置' },
                 { id: 'rule', name: '规则配置' }
             ],
-            // Rec Type Enum from CSV/Spec
             recTypes: [
                 'festival', 'education', 'business', 'travel', 'life', 
                 'family', 'emergencies', 'appliances', 'events', 'accomodation', 'others'
             ],
-            // Reason Type Enum Mapping
             reasonTypes: [
                 { id: 0, name: 'Accomodation' },
                 { id: 1, name: 'Travel' },
@@ -26,7 +24,6 @@ export default {
                 { id: 3, name: 'Education' },
                 { id: 4, name: 'Business' },
                 { id: 5, name: 'Events' },
-                // 6 skipped
                 { id: 7, name: 'Emergencies' },
                 { id: 8, name: 'Others' },
                 { id: 9, name: 'Festival' },
@@ -57,7 +54,6 @@ export default {
     },
     template: `
         <Modal :title="modalTitle" @close="$emit('close')">
-            
             <div class="flex border-b border-gray-200 px-6 pt-2 space-x-6 bg-white sticky top-0 z-10 shrink-0">
                 <button v-for="tab in tabs" :key="tab.id" 
                     @click="activeTab = tab.id"
@@ -134,9 +130,7 @@ export default {
                             <label class="label-std">默认目标金额</label>
                             <input type="number" v-model="editingTpl.target_amount" class="input-std font-bold text-opay">
                         </div>
-                        <div class="form-group">
-                            <!-- Placeholder for alignment -->
-                        </div>
+                        <div class="form-group"></div>
                         <div class="form-group col-span-2">
                             <label class="label-std">快捷选项金额 (3 Options, comma separated)</label>
                             <input v-model="targetAmountsStr" class="input-std" placeholder="e.g. 200000, 500000, 1000000">
@@ -169,8 +163,8 @@ export default {
                             <input type="date" v-model="editingTpl.end_date" class="input-std">
                         </div>
                         <div class="form-group">
-                            <label class="label-std">失效日期</label>
-                            <input type="date" v-model="editingTpl.expire_date" class="input-std">
+                            <label class="label-std">失效日期 <span class="text-red-500">*</span></label>
+                            <input type="date" v-model="editingTpl.expire_date" class="input-std" required>
                         </div>
                         <div class="form-group border-t pt-4 mt-2">
                             <label class="label-std">Template Status (启用状态)</label>
@@ -200,9 +194,7 @@ export default {
             </div>
             <template #footer>
                 <button @click="$emit('close')" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded text-sm font-bold">取消</button>
-                <button @click="$emit('save')" class="px-5 py-2 bg-opay hover:bg-opay-hover text-white rounded shadow text-sm font-bold">
-                    保存配置
-                </button>
+                <button @click="$emit('save')" class="px-5 py-2 bg-opay hover:bg-opay-hover text-white rounded shadow text-sm font-bold">保存配置</button>
             </template>
         </Modal>
     `
