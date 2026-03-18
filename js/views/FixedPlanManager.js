@@ -106,6 +106,7 @@ export default {
         handleSave() {
             if (this.modalMode === 'view') { this.showModal = false; return; }
             if (!this.editingPlan.name) return alert('请输入单品名称');
+            if (!this.editingPlan.target_audience_id) return alert('请输入定向人群ID');
 
             if (this.modalMode === 'create') {
                 this.$emit('initiate-approval', this.editingPlan, 'save_draft'); 

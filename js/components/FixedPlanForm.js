@@ -74,7 +74,7 @@ export default {
                             <input v-model="editingPlan.alias" class="input-std" placeholder="App端展示名称" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group col-span-2">
-                            <label class="label-std">定向人群ID (4位数字)</label>
+                            <label class="label-std">定向人群ID (4位数字) <span class="text-red-500">*</span></label>
                             <input v-model="editingPlan.target_audience_id" class="input-std" placeholder="e.g. 2350" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group col-span-2" v-if="mode !== 'create'">

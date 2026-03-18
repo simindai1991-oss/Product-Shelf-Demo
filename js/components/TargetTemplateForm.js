@@ -34,7 +34,9 @@ export default {
     created() {
         // 初始化辅助字段：将数组转换为逗号分隔的字符串以供编辑
         this.editingTpl._amountsStr = Array.isArray(this.editingTpl.target_amounts) ? this.editingTpl.target_amounts.join(',') : '';
-        this.editingTpl._amountsDescStr = Array.isArray(this.editingTpl.target_amounts_desc) ? this.editingTpl.target_amounts_desc.join(',') : '';
+        this.editingTpl._amountsDescStr = Array.isArray(this.editingTpl.target_amounts_desc) && this.editingTpl.target_amounts_desc.length > 0
+            ? this.editingTpl.target_amounts_desc.join(',') 
+            : (this.mode === 'create' ? 'Standard,Premium,Luxurious' : '');
     },
     methods: {
         handleSave() {
