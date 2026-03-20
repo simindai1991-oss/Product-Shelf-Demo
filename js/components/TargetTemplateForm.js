@@ -13,7 +13,12 @@ export default {
                 { id: 'amount', name: '金额配置' },
                 { id: 'rules', name: '规则配置' }
             ],
-            recTypes: ['festival', 'education', 'business', 'travel', 'life', 'family', 'emergencies', 'appliances', 'events', 'accomodation', 'others'],
+            // 更新 rec_type 枚举值
+            recTypes: [
+                'big_days', 'business', 'contribution', 'daily_spend', 
+                'education', 'family', 'festival', 'furniture_and_appliances', 
+                'large_payment', 'life_style', 'travel', 'wealth'
+            ],
             reasonTypes: [
                 { id: 0, name: 'Accomodation' }, { id: 1, name: 'Travel' }, { id: 2, name: 'Appliances' },
                 { id: 3, name: 'Education' }, { id: 4, name: 'Business' }, { id: 5, name: 'Events' },

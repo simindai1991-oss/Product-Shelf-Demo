@@ -18,10 +18,11 @@ export default {
                 status: '',
                 visibility: ''
             },
-            // Enums for Filter Dropdowns
+            // 更新 rec_type 枚举值用于筛选栏
             recTypes: [
-                'festival', 'education', 'business', 'travel', 'life', 
-                'family', 'emergencies', 'appliances', 'events', 'accomodation', 'others'
+                'big_days', 'business', 'contribution', 'daily_spend', 
+                'education', 'family', 'festival', 'furniture_and_appliances', 
+                'large_payment', 'life_style', 'travel', 'wealth'
             ],
             reasonTypes: [
                 { id: 0, name: 'Accomodation' }, { id: 1, name: 'Travel' }, { id: 2, name: 'Appliances' },
