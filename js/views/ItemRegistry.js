@@ -23,6 +23,10 @@ export default {
                     if (item.product_code === 'Fixed') {
                         isStandard = standardFixedCodes.includes(item.item_code);
                     }
+                    // 过滤掉 KA Fixed 的基础单品，使其不在标准单品列表中展示
+                    if (item.product_code === 'KA Fixed') {
+                        isStandard = false;
+                    }
                     if (!isStandard) return false;
 
                     if (this.filters.parentCode && item.product_code !== this.filters.parentCode) {
@@ -36,7 +40,8 @@ export default {
                         ...item,
                         parentName: parent ? parent.name : item.product_code,
                         category: parent ? parent.category : '-',
-                        isPending: !!item.pending_rate_config
+                        isPending: !!item.pending_rate_config,
+                        sync_status: item.sync_status
                     };
                 });
         }
@@ -73,7 +78,10 @@ export default {
                     <tbody class="divide-y divide-gray-200 bg-white">
                         <tr v-for="item in flatItems" :key="item.item_code" class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4">
-                                <div class="font-bold text-gray-900 text-sm">{{ item.item_name }}</div>
+                                <div class="flex items-center">
+                                    <div class="font-bold text-gray-900 text-sm">{{ item.item_name }}</div>
+                                    <span v-if="item.sync_status === 'SYNCING'" class="ml-2 text-[10px] bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded border border-blue-100 font-bold whitespace-nowrap">同步中</span>
+                                </div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm text-gray-700">{{ item.parentName }}</div>

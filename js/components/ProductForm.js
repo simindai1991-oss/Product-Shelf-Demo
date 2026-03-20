@@ -17,14 +17,11 @@ export default {
         isRateTiered() {
             return this.editingData.interest_rate?.type === 'tiered';
         },
-        // 控制基础信息是否可编辑
         isBasicInfoEditable() {
             if (this.mode === 'view') return false;
-            // 标准单品修改模式下，基础信息不允许改
             if (this.formType === 'item' && this.mode === 'edit') return false;
             return true;
         },
-        // 控制利率是否可编辑
         isRateEditable() {
             if (this.mode === 'view') return false;
             return true;
@@ -63,15 +60,10 @@ export default {
                             <input v-model="editingData.product_code" disabled class="input-std font-mono bg-gray-100">
                         </div>
                         <div class="form-group">
-                            <label class="label-std">Category</label>
-                            <select v-model="editingData.category" disabled class="input-std bg-gray-100">
-                                <option v-for="c in categories" :value="c.code">{{ c.name }}</option>
-                            </select>
-                        </div>
-                        <div class="form-group col-span-2">
                             <label class="label-std">Product Name</label>
                             <input v-model="editingData.name" disabled class="input-std bg-gray-100">
                         </div>
+                        <!-- Removed Category input here -->
                     </div>
                     <div class="border-t border-gray-200 pt-4">
                         <h4 class="text-sm font-bold text-gray-800 mb-3">Compliance & Finance</h4>

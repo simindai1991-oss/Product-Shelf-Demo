@@ -2,8 +2,8 @@ import Modal from './Modal.js';
 
 export default {
     components: { Modal },
-    props: ['modelValue', 'mode', 'fixedItems'],
-    emits: ['update:modelValue', 'close', 'save'],
+    props: ['modelValue', 'mode', 'fixedItems', 'isKaFixed'],
+    emits: ['update:modelValue', 'close', 'save', 'delete'],
     data() {
         return {
             activeTab: 'basic',
@@ -13,7 +13,6 @@ export default {
                 { id: 'limits', name: '额度规则' },
                 { id: 'dates', name: '销售周期' }
             ],
-            // 本地临时变量，用于处理 Benchmark 的百分比显示
             displayBenchmark: 0
         }
     },
@@ -23,24 +22,26 @@ export default {
             set(val) { this.$emit('update:modelValue', val); }
         },
         modalTitle() {
-            if (this.mode === 'view') return 'Fixed Special 详情 (View Only)';
-            return this.mode === 'create' ? '发行 Fixed Special 产品' : '编辑产品要素';
+            const prefix = this.isKaFixed ? 'KA Fixed ' : 'Fixed Special ';
+            if (this.mode === 'view') return `${prefix}详情 (View Only)`;
+            return this.mode === 'create' ? `发行 ${prefix}单品` : '编辑单品要素';
         },
         isReadOnly() {
             return this.mode === 'view';
         }
     },
     created() {
-        // Init Rates
         if (!this.editingPlan.rates || this.editingPlan.rates.length === 0) {
             this.editingPlan.rates = [{ stepMinAmount: 0, rate: 0, displayRate: 0 }];
         }
-        // Init Benchmark Display (Decimal -> Percentage)
         if (this.editingPlan.benchmark_rate !== undefined) {
             this.displayBenchmark = parseFloat((this.editingPlan.benchmark_rate * 100).toFixed(2));
         } else {
             this.editingPlan.benchmark_rate = 0;
             this.displayBenchmark = 0;
+        }
+        if (this.editingPlan.is_unlimited_quota === undefined) {
+            this.editingPlan.is_unlimited_quota = false;
         }
     },
     methods: {
@@ -69,7 +70,7 @@ export default {
                 <div v-show="activeTab === 'basic'" class="space-y-4 bg-white p-5 rounded border border-gray-200">
                     <div class="grid grid-cols-4 gap-4">
                         <div class="form-group col-span-2">
-                            <label class="label-std">产品名称 (Product Name) <span class="text-red-500">*</span></label>
+                            <label class="label-std">单品名称 (Item Name) <span class="text-red-500">*</span></label>
                             <input v-model="editingPlan.name" class="input-std" placeholder="内部管理名称" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group col-span-2">
@@ -77,11 +78,11 @@ export default {
                             <input v-model="editingPlan.alias" class="input-std" placeholder="App端展示名称" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group col-span-2">
-                            <label class="label-std">定向人群ID</label>
-                            <input v-model="editingPlan.target_audience_id" class="input-std" placeholder="e.g. CROWD_VIP_001" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
+                            <label class="label-std">定向人群ID <span class="text-red-500">*</span></label>
+                            <input v-model="editingPlan.target_audience_id" class="input-std" placeholder="e.g. 2350" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
-                        <div class="form-group col-span-2">
-                            <label class="label-std">Plan ID</label>
+                        <div class="form-group col-span-2" v-if="mode !== 'create'">
+                            <label class="label-std">Item ID</label>
                             <input v-model="editingPlan.plan_id" disabled class="input-std bg-gray-100 text-gray-500 font-mono">
                         </div>
                     </div>
@@ -90,7 +91,6 @@ export default {
                 <!-- Tab 2: Rates -->
                 <div v-show="activeTab === 'rates'" class="space-y-4 bg-white p-5 rounded border border-gray-200">
                     <div class="grid grid-cols-2 gap-6">
-                        <!-- APY Input -->
                         <div class="form-group">
                             <label class="label-std">年化利率 (APY) <span class="text-red-500">*</span></label>
                             <div class="relative">
@@ -100,8 +100,6 @@ export default {
                             </div>
                             <p class="text-[10px] text-gray-400 mt-1">对客展示收益率</p>
                         </div>
-                        
-                        <!-- Benchmark Input (Same Style) -->
                         <div class="form-group">
                             <label class="label-std">Benchmark 利率 (Cost Base)</label>
                             <div class="relative">
@@ -116,9 +114,18 @@ export default {
 
                 <!-- Tab 3: Limits -->
                 <div v-show="activeTab === 'limits'" class="space-y-4 bg-white p-5 rounded border border-gray-200">
+                    <!-- KA Fixed Only: Unlimited Quota Toggle -->
+                    <div v-if="isKaFixed" class="mb-4 bg-blue-50 border border-blue-100 p-3 rounded flex items-center justify-between">
+                        <span class="text-sm font-bold text-blue-800">无限额模式 (Unlimited Quota)</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" v-model="editingPlan.is_unlimited_quota" :disabled="isReadOnly" class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-opay"></div>
+                        </label>
+                    </div>
+
                     <div class="grid grid-cols-3 gap-4">
-                        <div class="form-group">
-                            <label class="label-std">发行总规模 <span class="text-red-500">*</span></label>
+                        <div class="form-group" v-if="!editingPlan.is_unlimited_quota">
+                            <label class="label-std">发行总规模 (₦) <span class="text-red-500">*</span></label>
                             <input type="number" v-model="editingPlan.total_issuance_amount" class="input-std font-mono font-bold text-gray-700" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group">
@@ -126,15 +133,15 @@ export default {
                             <input type="number" v-model="editingPlan.period_days" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group">
-                            <label class="label-std">起购金额 (Min) <span class="text-red-500">*</span></label>
+                            <label class="label-std">起购金额 (₦) <span class="text-red-500">*</span></label>
                             <input type="number" v-model="editingPlan.min_sub_amount" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
-                        <div class="form-group">
-                            <label class="label-std">单笔上限 (Max Single) <span class="text-red-500">*</span></label>
+                        <div class="form-group" v-if="!editingPlan.is_unlimited_quota">
+                            <label class="label-std">单笔上限 (₦) <span class="text-red-500">*</span></label>
                             <input type="number" v-model="editingPlan.max_single_sub" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
-                        <div class="form-group">
-                            <label class="label-std">累计限额 (Cum Limit) <span class="text-red-500">*</span></label>
+                        <div class="form-group" v-if="!editingPlan.is_unlimited_quota">
+                            <label class="label-std">累计限额 (₦) <span class="text-red-500">*</span></label>
                             <input type="number" v-model="editingPlan.cum_sub_limit" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                     </div>
@@ -144,18 +151,19 @@ export default {
                 <div v-show="activeTab === 'dates'" class="space-y-4 bg-white p-5 rounded border border-gray-200">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="form-group">
-                            <label class="label-std">申购开始日期 <span class="text-red-500">*</span></label>
-                            <input type="date" v-model="editingPlan.sale_start_time" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
+                            <label class="label-std">申购开始时间 (精确到秒) <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" step="1" v-model="editingPlan.sale_start_time" class="input-std font-mono" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                         <div class="form-group">
-                            <label class="label-std">申购截止日期 <span class="text-red-500">*</span></label>
-                            <input type="date" v-model="editingPlan.sale_end_time" class="input-std" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
+                            <label class="label-std">申购截止时间 (精确到秒) <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" step="1" v-model="editingPlan.sale_end_time" class="input-std font-mono" :disabled="isReadOnly" :class="isReadOnly ? 'bg-gray-50' : ''">
                         </div>
                     </div>
                 </div>
 
             </div>
             <template #footer>
+                <button v-if="!isReadOnly && editingPlan.status === 'Draft'" @click="$emit('delete', editingPlan)" class="mr-auto px-4 py-2 text-red-600 hover:bg-red-50 rounded text-sm font-bold transition">删除草稿</button>
                 <button @click="$emit('close')" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded text-sm font-bold transition">
                     {{ isReadOnly ? '关闭' : '取消' }}
                 </button>
