@@ -23,6 +23,10 @@ export default {
                     if (item.product_code === 'Fixed') {
                         isStandard = standardFixedCodes.includes(item.item_code);
                     }
+                    // 过滤掉 KA Fixed 的基础单品，使其不在标准单品列表中展示
+                    if (item.product_code === 'KA Fixed') {
+                        isStandard = false;
+                    }
                     if (!isStandard) return false;
 
                     if (this.filters.parentCode && item.product_code !== this.filters.parentCode) {

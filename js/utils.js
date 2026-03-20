@@ -1,7 +1,5 @@
-// js/utils.js
-
 export const STANDARD_PRODUCTS = [
-    'OWealth', 'Targets', 'SafeBox', 'Spend & Save', 'Sub-account', 'Superbalance', 'Fixed'
+    'OWealth', 'Targets', 'SafeBox', 'Spend & Save', 'Sub-account', 'Superbalance', 'Fixed', 'KA Fixed'
 ];
 
 export const FIELD_NAMES = {
@@ -12,7 +10,7 @@ export const FIELD_NAMES = {
     alias: '对客别名', total_issuance_amount: '发行总规模', period_days: '持有期限',
     min_sub_amount: '起购金额', max_single_sub: '单笔上限', cum_sub_limit: '累计限额',
     sale_start_time: '申购开始日', sale_end_time: '申购截止日', rates: '利率配置',
-    target_audience_id: '人群ID'
+    target_audience_id: '人群ID', is_unlimited_quota: '无限额模式'
 };
 
 export const STATUS_MAP = {
@@ -36,11 +34,18 @@ export const PERMISSION_TREE = [
             { 
                 code: 'SPECIAL_PLAN', name: 'Fixed Special产品', 
                 actions: [
-                    {k:'VIEW', n:'查看'}, 
-                    {k:'CREATE', n:'创建'}, 
-                    {k:'EDIT', n:'编辑'}, 
-                    {k:'PUBLISH', n:'上架'}, 
-                    {k:'OFFSHELF', n:'下架'}
+                    {k:'VIEW', n:'查看'}, {k:'CREATE', n:'创建'}, {k:'EDIT', n:'编辑'}, {k:'PUBLISH', n:'上架'}, {k:'OFFSHELF', n:'下架'}
+                ] 
+            }
+        ]
+    },
+    {
+        code: 'KA_FIXED_OPS', name: 'KA Fixed业务管理',
+        resources: [
+            { 
+                code: 'PLAN', name: 'KA Fixed单品', 
+                actions: [
+                    {k:'VIEW', n:'查看'}, {k:'CREATE', n:'创建'}, {k:'EDIT', n:'编辑'}, {k:'PUBLISH', n:'上架'}, {k:'OFFSHELF', n:'下架'}
                 ] 
             }
         ]
@@ -67,6 +72,7 @@ export function formatMoneyRaw(val) {
 }
 
 export function formatMoney(val) {
+    if(val === undefined || val === null) return '--';
     return '₦' + formatMoneyRaw(val);
 }
 
@@ -78,7 +84,6 @@ export function formatRateDisplay(rateObj) {
     if (rateObj.type === 'tiered' && Array.isArray(rateObj.rules)) {
         return rateObj.rules.map(r => {
             const rate = (r.rate * 100).toFixed(2) + '%';
-            // 优化：如果起购金额为0，不显示条件，只显示利率
             if (Number(r.min) === 0) {
                 return rate;
             }

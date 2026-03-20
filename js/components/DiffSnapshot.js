@@ -14,8 +14,8 @@ export default {
             const map = {};
             const keys = new Set([...Object.keys(this.originalSnapshot), ...Object.keys(this.editingProduct)]);
             
-            // 针对所有情况忽略的公共字段
-            let ignoredKeys = ['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress'];
+            // 针对所有情况忽略的公共字段，新增 plan_id
+            let ignoredKeys = ['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress', 'plan_id'];
             
             // 单品管理 (modify_item) 专属忽略字段
             if (this.actionType === 'modify_item') {
@@ -101,8 +101,8 @@ export default {
                                 <span class="col-span-2 text-gray-600">{{ originalSnapshot.status || 'N/A (New)' }}</span>
                             </div>
                             <template v-for="(val, key) in originalSnapshot" :key="key">
-                                <!-- 在模板中也过滤掉 isPending, parentName, category 以防万一 -->
-                                <div v-if="key !== 'status' && !['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress', 'isPending', 'parentName', 'category'].includes(key)" 
+                                <!-- 在模板中也过滤掉 isPending, parentName, category, plan_id 以防万一 -->
+                                <div v-if="key !== 'status' && !['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress', 'isPending', 'parentName', 'category', 'plan_id'].includes(key)" 
                                      class="grid grid-cols-3 gap-2 border-b border-gray-100 pb-1"
                                      :class="diffMap[key] ? 'bg-yellow-50' : ''">
                                     <span class="text-gray-400 font-bold break-all">{{ getFieldName(key) }}</span>
@@ -130,7 +130,7 @@ export default {
                                 <span class="col-span-2 font-bold" :class="originalSnapshot.status !== targetStatus ? 'text-red-600' : 'text-gray-600'">{{ targetStatus }}</span>
                             </div>
                             <template v-for="(val, key) in editingProduct" :key="key">
-                                <div v-if="key !== 'status' && !['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress', 'isPending', 'parentName', 'category'].includes(key)" 
+                                <div v-if="key !== 'status' && !['displayRate', 'update_time', 'operator', 'sold_amount', 'displayStatus', 'auditStatusLabel', 'progress', 'isPending', 'parentName', 'category', 'plan_id'].includes(key)" 
                                      class="grid grid-cols-3 gap-2 border-b border-gray-100 pb-1"
                                      :class="diffMap[key] ? 'bg-yellow-100 -mx-2 px-2 rounded' : ''">
                                     <span class="text-gray-400 font-bold break-all">{{ getFieldName(key) }}</span>

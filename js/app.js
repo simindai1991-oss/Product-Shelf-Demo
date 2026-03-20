@@ -7,6 +7,7 @@ import ProductForm from './components/ProductForm.js';
 import ProductRegistry from './views/ProductRegistry.js';
 import ItemRegistry from './views/ItemRegistry.js'; 
 import FixedPlanManager from './views/FixedPlanManager.js';
+import KaFixedPlanManager from './views/KaFixedPlanManager.js'; // 引入全新的 KA Fixed 视图
 import TargetTemplateManager from './views/TargetTemplateManager.js';
 import SystemParams from './views/SystemParams.js';
 import UserManagement from './views/UserManagement.js';
@@ -15,11 +16,10 @@ import RolePermissions from './views/RolePermissions.js';
 const app = Vue.createApp({
     components: {
         Toast, DiffSnapshot, ProductForm,
-        ProductRegistry, ItemRegistry, FixedPlanManager, TargetTemplateManager, 
+        ProductRegistry, ItemRegistry, FixedPlanManager, KaFixedPlanManager, TargetTemplateManager, 
         SystemParams, UserManagement, RolePermissions
     },
     data() {
-        // 初始化包含时分秒的系统时间
         const now = new Date();
         const pad = n => n.toString().padStart(2, '0');
         const sysDateTime = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
@@ -28,13 +28,14 @@ const app = Vue.createApp({
             configLoaded: false,
             currentRoleCode: 'SUPER_ADMIN',
             currentView: 'product_mgmt', 
-            systemDate: sysDateTime, // 升级为秒级精度
+            systemDate: sysDateTime, 
 
-            productDefinitions: [], savingItems: [], fixedPlans: [], targetTemplates: [],
+            productDefinitions: [], savingItems: [], fixedPlans: [], kaFixedPlans: [], targetTemplates: [],
             rolesList: [], categories: [], systemParams: [], usersList: [],
             
             showModal: false, modalMode: 'view', modalFormType: 'product_def', editingData: {},
             showDiffModal: false, originalSnapshot: {}, pendingApprovalAction: '',
+            isKaFixedApproval: false, // 标记当前审批流是来自哪个业务线
             toast: { show: false, title: '', msg: '', icon: '' }
         }
     },
@@ -43,7 +44,8 @@ const app = Vue.createApp({
         showSavingMenu() {
             return this.hasPermission('PRODUCT_MGMT:L1_PRODUCT:VIEW') || 
                    this.hasPermission('PRODUCT_MGMT:L2_ITEM:VIEW') || 
-                   this.hasPermission('FIXED_OPS:SPECIAL_PLAN:VIEW');
+                   this.hasPermission('FIXED_OPS:SPECIAL_PLAN:VIEW') ||
+                   this.hasPermission('KA_FIXED_OPS:PLAN:VIEW');
         },
         showFuncMenu() {
             return this.hasPermission('TARGET_OPS:TEMPLATE:VIEW');
@@ -69,6 +71,7 @@ const app = Vue.createApp({
             this.productDefinitions = C.product_definitions || [];
             this.savingItems = C.saving_items || [];
             this.fixedPlans = C.fixed_plans || [];
+            this.kaFixedPlans = C.ka_fixed_plans || [];
             this.targetTemplates = C.target_templates || [];
 
             this.systemParams = C.system_params || [];
@@ -76,7 +79,6 @@ const app = Vue.createApp({
         }
     },
     methods: {
-        mapOldPermsToFunctions(perms) { return ['QUERY']; }, // Dummy
         hasPermission(perm) {
             return checkPermission(perm, this.currentRoleCode, this.rolesList);
         },
@@ -109,22 +111,27 @@ const app = Vue.createApp({
             }
         },
         handleSaveRegistry() {
-            if (this.modalFormType === 'item') this.initiateApproval(this.editingData, 'modify_item');
+            if (this.modalFormType === 'item') this.initiateApproval(this.editingData, 'modify_item', false);
         },
-        initiateApproval(data, action) {
+        initiateApprovalFromChild(data, action, isKaFixed = false) { 
+            this.initiateApproval(data, action, isKaFixed); 
+        },
+        initiateApproval(data, action, isKaFixed = false) {
             this.editingData = data; 
             this.pendingApprovalAction = action;
+            this.isKaFixedApproval = isKaFixed;
+
             if (action === 'save_draft') { this.confirmApproval(); return; }
             
             if (action === 'modify_item') {
                 this.originalSnapshot = JSON.parse(JSON.stringify(this.savingItems.find(i => i.item_code === data.item_code) || {}));
             } else if (['apply_listing', 'modify_fixed', 'off_shelf'].includes(action)) {
-                this.originalSnapshot = JSON.parse(JSON.stringify(this.fixedPlans.find(p => p.plan_id === data.plan_id) || {}));
+                const targetArray = isKaFixed ? this.kaFixedPlans : this.fixedPlans;
+                this.originalSnapshot = JSON.parse(JSON.stringify(targetArray.find(p => p.plan_id === data.plan_id) || {}));
             }
             this.showModal = false; 
             this.showDiffModal = true;
         },
-        initiateApprovalFromChild(data, action) { this.initiateApproval(data, action); },
         confirmApproval() {
             if (this.pendingApprovalAction === 'modify_item') {
                 const idx = this.savingItems.findIndex(i => i.item_code === this.editingData.item_code);
@@ -132,26 +139,23 @@ const app = Vue.createApp({
                 this.showToast('单品修改已提交审批', '🔒');
             } 
             else if (this.pendingApprovalAction === 'save_draft') {
-                this.fixedPlans.push(this.editingData);
+                const targetArray = this.isKaFixedApproval ? this.kaFixedPlans : this.fixedPlans;
+                targetArray.push(this.editingData);
                 this.showToast('草稿已保存');
             }
-            else if (this.pendingApprovalAction === 'apply_listing') {
-                const idx = this.fixedPlans.findIndex(p => p.plan_id === this.editingData.plan_id);
-                if(idx !== -1) this.fixedPlans[idx].status = 'Pending_Approval';
-                this.showToast('上架申请已提交审批', '⏳');
-            }
-            else if (this.pendingApprovalAction === 'modify_fixed') {
-                const idx = this.fixedPlans.findIndex(p => p.plan_id === this.editingData.plan_id);
-                if(idx !== -1) {
-                    this.editingData.status = 'Pending_Modification';
-                    this.fixedPlans[idx] = this.editingData;
+            else {
+                const targetArray = this.isKaFixedApproval ? this.kaFixedPlans : this.fixedPlans;
+                const idx = targetArray.findIndex(p => p.plan_id === this.editingData.plan_id);
+                
+                if (idx !== -1) {
+                    if (this.pendingApprovalAction === 'apply_listing') targetArray[idx].status = 'Pending_Approval';
+                    else if (this.pendingApprovalAction === 'modify_fixed') {
+                        this.editingData.status = 'Pending_Modification';
+                        targetArray[idx] = this.editingData;
+                    }
+                    else if (this.pendingApprovalAction === 'off_shelf') targetArray[idx].status = 'Pending_OffShelf';
                 }
-                this.showToast('变更申请已提交审批', '⏳');
-            }
-            else if (this.pendingApprovalAction === 'off_shelf') {
-                const idx = this.fixedPlans.findIndex(p => p.plan_id === this.editingData.plan_id);
-                if(idx !== -1) this.fixedPlans[idx].status = 'Pending_OffShelf';
-                this.showToast('下架申请已提交审批', '⏳');
+                this.showToast('审批申请已提交', '⏳');
             }
             this.showDiffModal = false;
         },
@@ -161,11 +165,14 @@ const app = Vue.createApp({
                 if (planOrItem.status === 'Pending_Approval') nextStatus = 'Approved'; 
                 if (planOrItem.status === 'Pending_Modification') nextStatus = 'Active';
                 if (planOrItem.status === 'Pending_OffShelf') nextStatus = 'Suspended';
-                const idx = this.fixedPlans.findIndex(p => p.plan_id === planOrItem.plan_id);
-                if(idx !== -1) {
-                    this.fixedPlans[idx].status = nextStatus;
-                    this.showToast(`Fixed Special 审批通过!`, '✅');
+                
+                let idx = this.fixedPlans.findIndex(p => p.plan_id === planOrItem.plan_id);
+                if(idx !== -1) this.fixedPlans[idx].status = nextStatus;
+                else {
+                    idx = this.kaFixedPlans.findIndex(p => p.plan_id === planOrItem.plan_id);
+                    if(idx !== -1) this.kaFixedPlans[idx].status = nextStatus;
                 }
+                this.showToast(`单品审批通过!`, '✅');
             } else if (planOrItem.item_code) {
                 const idx = this.savingItems.findIndex(i => i.item_code === planOrItem.item_code);
                 if(idx !== -1 && this.savingItems[idx].pending_rate_config) {
@@ -179,20 +186,26 @@ const app = Vue.createApp({
         refreshFixedStats() {
             let count = 0;
             const now = this.systemDate;
-            this.fixedPlans.forEach(p => {
+            
+            const updater = (p) => {
                 const isExpired = p.sale_end_time && p.sale_end_time < now;
-                if(!isExpired && (p.status === 'Active') && p.sold_amount < p.total_issuance_amount) {
+                if(!isExpired && (p.status === 'Active') && !p.is_unlimited_quota && p.sold_amount < p.total_issuance_amount) {
                     const add = Math.floor(p.total_issuance_amount * 0.05);
                     p.sold_amount = Math.min(p.total_issuance_amount, p.sold_amount + add);
                     count++;
                 }
-            });
+            };
+
+            this.fixedPlans.forEach(updater);
+            this.kaFixedPlans.forEach(updater);
+
             this.showToast(`已刷新 ${count} 个在售产品销量`);
         },
-        handleDeletePlan(plan) {
-            const idx = this.fixedPlans.findIndex(p => p.plan_id === plan.plan_id);
+        handleDeletePlan(plan, isKaFixed) {
+            const targetArray = isKaFixed ? this.kaFixedPlans : this.fixedPlans;
+            const idx = targetArray.findIndex(p => p.plan_id === plan.plan_id);
             if (idx !== -1) {
-                this.fixedPlans.splice(idx, 1);
+                targetArray.splice(idx, 1);
                 this.showToast('草稿已删除', '🗑️');
             }
         },
@@ -252,6 +265,11 @@ const app = Vue.createApp({
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                             Fixed Special管理
                         </a>
+                        <!-- KA Fixed View Trigger -->
+                        <a href="#" v-if="hasPermission('KA_FIXED_OPS:PLAN:VIEW')" @click.prevent="currentView = 'ka_fixed_ops'" :class="navClass('ka_fixed_ops')" class="px-6 py-2.5 text-sm transition-colors flex items-center gap-3">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                            KA Fixed管理
+                        </a>
                     </nav>
                 </div>
                 <div class="mb-8" v-if="showFuncMenu">
@@ -285,7 +303,13 @@ const app = Vue.createApp({
             <main class="flex-1 overflow-auto p-8 relative">
                 <ProductRegistry v-if="currentView === 'product_mgmt'" :product-definitions="productDefinitions" :categories="categories" :role-code="currentRoleCode" :has-permission="hasPermission" @open-modal="openRegistryModal" />
                 <ItemRegistry v-if="currentView === 'item_mgmt'" :saving-items="savingItems" :product-definitions="productDefinitions" :has-permission="hasPermission" @open-modal="openRegistryModal" @mock-pass-item="handleItemMockPass" />
+                
+                <!-- Fixed Special Manager -->
                 <FixedPlanManager v-if="currentView === 'fixed_ops'" :plans="fixedPlans" :items="savingItems" :system-date="systemDate" :has-permission="hasPermission" @initiate-approval="initiateApprovalFromChild" @mock-audit-pass="handleMockPass" @refresh-stats="refreshFixedStats" @delete-plan="handleDeletePlan" />
+                
+                <!-- KA Fixed Manager using the NEW View file -->
+                <KaFixedPlanManager v-if="currentView === 'ka_fixed_ops'" :plans="kaFixedPlans" :items="savingItems" :system-date="systemDate" :has-permission="hasPermission" @initiate-approval="initiateApprovalFromChild" @mock-audit-pass="handleMockPass" @refresh-stats="refreshFixedStats" @delete-plan="handleDeletePlan" />
+
                 <TargetTemplateManager v-if="currentView === 'target_ops'" :templates="targetTemplates" :items="savingItems" @create-template="handleCreateTemplate" @update-template="handleUpdateTemplate" @delete-template="handleDeleteTemplate" />
                 <SystemParams v-if="currentView === 'params'" :params="systemParams" :has-permission="hasPermission" @update-param="handleUpdateParam" @add-param="handleAddParam" />
                 <UserManagement v-if="currentView === 'users'" :users="usersList" :roles="rolesList" :has-permission="hasPermission" @add-user="handleAddUser" @update-user="handleUpdateUser" />
@@ -295,12 +319,12 @@ const app = Vue.createApp({
 
         <ProductForm v-if="showModal" v-model="editingData" :mode="modalMode" :form-type="modalFormType" :categories="categories" @close="showModal = false" @save="handleSaveRegistry" />
 
+        <!-- Generic Approval Flow -->
         <DiffSnapshot v-if="showDiffModal" :original-snapshot="originalSnapshot" :editing-product="editingData" :target-status="pendingApprovalAction.includes('apply_listing') ? 'Pending Approval' : (pendingApprovalAction.includes('modify') ? 'Pending Mod' : (pendingApprovalAction === 'off_shelf' ? 'Pending Off' : 'Active'))" :action-type="pendingApprovalAction" @close="showDiffModal = false" @confirm="confirmApproval" />
 
         <div class="fixed bottom-4 left-4 z-[100] bg-gray-800 text-white p-3 rounded-lg shadow-xl opacity-90 hover:opacity-100 transition">
             <div class="text-[10px] text-gray-400 mb-1 font-bold uppercase">Time Travel</div>
             <div class="flex items-center gap-2">
-                <!-- 格式化展示时间，更美观 -->
                 <div class="font-mono text-sm bg-black px-2 py-1 rounded">{{ systemDate.replace('T', ' ') }}</div>
                 <button @click="addDays(1)" class="bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded text-xs">+1D</button>
                 <button @click="addDays(30)" class="bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded text-xs">+1M</button>
