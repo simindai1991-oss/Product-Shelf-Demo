@@ -7,8 +7,9 @@ import ProductForm from './components/ProductForm.js';
 import ProductRegistry from './views/ProductRegistry.js';
 import ItemRegistry from './views/ItemRegistry.js'; 
 import FixedPlanManager from './views/FixedPlanManager.js';
-import KaFixedPlanManager from './views/KaFixedPlanManager.js'; // 引入全新的 KA Fixed 视图
+import KaFixedPlanManager from './views/KAFixedPlanManager.js'; 
 import TargetTemplateManager from './views/TargetTemplateManager.js';
+import AcRetentionManager from './views/AcRetentionManager.js'; // 引入新增的 AC 挽留视图
 import SystemParams from './views/SystemParams.js';
 import UserManagement from './views/UserManagement.js';
 import RolePermissions from './views/RolePermissions.js';
@@ -16,7 +17,8 @@ import RolePermissions from './views/RolePermissions.js';
 const app = Vue.createApp({
     components: {
         Toast, DiffSnapshot, ProductForm,
-        ProductRegistry, ItemRegistry, FixedPlanManager, KaFixedPlanManager, TargetTemplateManager, 
+        ProductRegistry, ItemRegistry, FixedPlanManager, KaFixedPlanManager, 
+        TargetTemplateManager, AcRetentionManager, 
         SystemParams, UserManagement, RolePermissions
     },
     data() {
@@ -30,12 +32,13 @@ const app = Vue.createApp({
             currentView: 'product_mgmt', 
             systemDate: sysDateTime, 
 
-            productDefinitions: [], savingItems: [], fixedPlans: [], kaFixedPlans: [], targetTemplates: [],
+            productDefinitions: [], savingItems: [], fixedPlans: [], kaFixedPlans: [], 
+            targetTemplates: [], acRetentionStrategies: [],
             rolesList: [], categories: [], systemParams: [], usersList: [],
             
             showModal: false, modalMode: 'view', modalFormType: 'product_def', editingData: {},
             showDiffModal: false, originalSnapshot: {}, pendingApprovalAction: '',
-            isKaFixedApproval: false, // 标记当前审批流是来自哪个业务线
+            isKaFixedApproval: false,
             toast: { show: false, title: '', msg: '', icon: '' }
         }
     },
@@ -48,7 +51,8 @@ const app = Vue.createApp({
                    this.hasPermission('KA_FIXED_OPS:PLAN:VIEW');
         },
         showFuncMenu() {
-            return this.hasPermission('TARGET_OPS:TEMPLATE:VIEW');
+            return this.hasPermission('TARGET_OPS:TEMPLATE:VIEW') ||
+                   this.hasPermission('TARGET_OPS:AC_RETENTION:VIEW');
         },
         showSystemMenu() {
             return this.hasPermission('SYSTEM:PARAMS:VIEW') || 
@@ -73,6 +77,7 @@ const app = Vue.createApp({
             this.fixedPlans = C.fixed_plans || [];
             this.kaFixedPlans = C.ka_fixed_plans || [];
             this.targetTemplates = C.target_templates || [];
+            this.acRetentionStrategies = C.ac_retention_strategies || [];
 
             this.systemParams = C.system_params || [];
             this.usersList = C.users || [];
@@ -212,6 +217,15 @@ const app = Vue.createApp({
         handleCreateTemplate(tpl) { this.targetTemplates.push(tpl); this.showToast('模板已创建'); },
         handleUpdateTemplate(tpl) { const idx = this.targetTemplates.findIndex(t => t.template_no === tpl.template_no); if(idx !== -1) this.targetTemplates[idx] = tpl; this.showToast('模板配置已更新'); },
         handleDeleteTemplate(tpl) { const idx = this.targetTemplates.findIndex(t => t.template_no === tpl.template_no); if (idx !== -1) { this.targetTemplates.splice(idx, 1); this.showToast('模板已删除', '🗑️'); } },
+        
+        // 新增的 AC 挽留策略处理方法
+        handleCreateStrategy(s) { this.acRetentionStrategies.push(s); this.showToast('策略已创建并生效'); },
+        handleUpdateStrategy(s) { 
+            const idx = this.acRetentionStrategies.findIndex(x => x.id === s.id); 
+            if(idx !== -1) this.acRetentionStrategies[idx] = s; 
+            this.showToast('策略已更新'); 
+        },
+
         handleUpdateParam(key, val) { const p = this.systemParams.find(x => x.key === key); if(p) p.value = val; this.showToast('参数已保存'); },
         handleAddParam(p) { this.systemParams.push(p); this.showToast('参数已添加'); },
         handleAddUser(user) { this.usersList.push({ id: Date.now(), name: user.name, role: user.roles }); this.showToast('用户已添加'); },
@@ -265,7 +279,6 @@ const app = Vue.createApp({
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                             Fixed Special管理
                         </a>
-                        <!-- KA Fixed View Trigger -->
                         <a href="#" v-if="hasPermission('KA_FIXED_OPS:PLAN:VIEW')" @click.prevent="currentView = 'ka_fixed_ops'" :class="navClass('ka_fixed_ops')" class="px-6 py-2.5 text-sm transition-colors flex items-center gap-3">
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
                             KA Fixed管理
@@ -278,6 +291,11 @@ const app = Vue.createApp({
                         <a href="#" v-if="hasPermission('TARGET_OPS:TEMPLATE:VIEW')" @click.prevent="currentView = 'target_ops'" :class="navClass('target_ops')" class="px-6 py-2.5 text-sm transition-colors flex items-center gap-3">
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
                             Target场景模板
+                        </a>
+                        <!-- 新增 AC转账挽留策略 导航菜单 -->
+                        <a href="#" v-if="hasPermission('TARGET_OPS:AC_RETENTION:VIEW')" @click.prevent="currentView = 'ac_retention'" :class="navClass('ac_retention')" class="px-6 py-2.5 text-sm transition-colors flex items-center gap-3">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"></path></svg>
+                            AC转账挽留策略
                         </a>
                     </nav>
                 </div>
@@ -304,13 +322,15 @@ const app = Vue.createApp({
                 <ProductRegistry v-if="currentView === 'product_mgmt'" :product-definitions="productDefinitions" :categories="categories" :role-code="currentRoleCode" :has-permission="hasPermission" @open-modal="openRegistryModal" />
                 <ItemRegistry v-if="currentView === 'item_mgmt'" :saving-items="savingItems" :product-definitions="productDefinitions" :has-permission="hasPermission" @open-modal="openRegistryModal" @mock-pass-item="handleItemMockPass" />
                 
-                <!-- Fixed Special Manager -->
-                <FixedPlanManager v-if="currentView === 'fixed_ops'" :plans="fixedPlans" :items="savingItems" :system-date="systemDate" :has-permission="hasPermission" @initiate-approval="initiateApprovalFromChild" @mock-audit-pass="handleMockPass" @refresh-stats="refreshFixedStats" @delete-plan="handleDeletePlan" />
+                <FixedPlanManager v-if="currentView === 'fixed_ops'" :isKaFixed="false" :plans="fixedPlans" :items="savingItems" :system-date="systemDate" :has-permission="hasPermission" @initiate-approval="initiateApprovalFromChild" @mock-audit-pass="handleMockPass" @refresh-stats="refreshFixedStats" @delete-plan="handleDeletePlan" />
                 
-                <!-- KA Fixed Manager using the NEW View file -->
                 <KaFixedPlanManager v-if="currentView === 'ka_fixed_ops'" :plans="kaFixedPlans" :items="savingItems" :system-date="systemDate" :has-permission="hasPermission" @initiate-approval="initiateApprovalFromChild" @mock-audit-pass="handleMockPass" @refresh-stats="refreshFixedStats" @delete-plan="handleDeletePlan" />
 
                 <TargetTemplateManager v-if="currentView === 'target_ops'" :templates="targetTemplates" :items="savingItems" @create-template="handleCreateTemplate" @update-template="handleUpdateTemplate" @delete-template="handleDeleteTemplate" />
+                
+                <!-- 新增的 AC转账挽留策略 路由 -->
+                <AcRetentionManager v-if="currentView === 'ac_retention'" :strategies="acRetentionStrategies" :has-permission="hasPermission" @create-strategy="handleCreateStrategy" @update-strategy="handleUpdateStrategy" />
+
                 <SystemParams v-if="currentView === 'params'" :params="systemParams" :has-permission="hasPermission" @update-param="handleUpdateParam" @add-param="handleAddParam" />
                 <UserManagement v-if="currentView === 'users'" :users="usersList" :roles="rolesList" :has-permission="hasPermission" @add-user="handleAddUser" @update-user="handleUpdateUser" />
                 <RolePermissions v-if="currentView === 'permissions'" :roles="rolesList" :has-permission="hasPermission" @save-role="handleSaveRole" />
@@ -319,7 +339,6 @@ const app = Vue.createApp({
 
         <ProductForm v-if="showModal" v-model="editingData" :mode="modalMode" :form-type="modalFormType" :categories="categories" @close="showModal = false" @save="handleSaveRegistry" />
 
-        <!-- Generic Approval Flow -->
         <DiffSnapshot v-if="showDiffModal" :original-snapshot="originalSnapshot" :editing-product="editingData" :target-status="pendingApprovalAction.includes('apply_listing') ? 'Pending Approval' : (pendingApprovalAction.includes('modify') ? 'Pending Mod' : (pendingApprovalAction === 'off_shelf' ? 'Pending Off' : 'Active'))" :action-type="pendingApprovalAction" @close="showDiffModal = false" @confirm="confirmApproval" />
 
         <div class="fixed bottom-4 left-4 z-[100] bg-gray-800 text-white p-3 rounded-lg shadow-xl opacity-90 hover:opacity-100 transition">
