@@ -1,4 +1,4 @@
-// config.js - 增加 KA Fixed 数据结构和权限
+// config.js - 增加 AC 转账挽留策略数据结构和权限
 
 (function() {
     const today = new Date();
@@ -40,10 +40,13 @@
                     'FIXED_OPS:SPECIAL_PLAN:VIEW', 'FIXED_OPS:SPECIAL_PLAN:CREATE', 'FIXED_OPS:SPECIAL_PLAN:EDIT', 'FIXED_OPS:SPECIAL_PLAN:PUBLISH', 'FIXED_OPS:SPECIAL_PLAN:OFFSHELF',
                     'KA_FIXED_OPS:PLAN:VIEW', 'KA_FIXED_OPS:PLAN:CREATE', 'KA_FIXED_OPS:PLAN:EDIT', 'KA_FIXED_OPS:PLAN:PUBLISH', 'KA_FIXED_OPS:PLAN:OFFSHELF',
                     'TARGET_OPS:TEMPLATE:VIEW', 'TARGET_OPS:TEMPLATE:EDIT',
+                    'TARGET_OPS:AC_RETENTION:VIEW', 'TARGET_OPS:AC_RETENTION:CREATE', 'TARGET_OPS:AC_RETENTION:EDIT',
+                    'TARGET_OPS:KA_WHITELIST:VIEW', 'TARGET_OPS:KA_WHITELIST:CREATE', 'TARGET_OPS:KA_WHITELIST:EDIT',
+                    'TARGET_OPS:TEXT_LINK:VIEW', 'TARGET_OPS:TEXT_LINK:CREATE', 'TARGET_OPS:TEXT_LINK:EDIT',
                     'SYSTEM:PARAMS:VIEW', 'SYSTEM:USER:VIEW', 'SYSTEM:RBAC:VIEW'
                 ]
             },
-            USER: { code: 'USER', name: 'General User', permissions: ['PRODUCT_MGMT:L1_PRODUCT:VIEW', 'PRODUCT_MGMT:L2_ITEM:VIEW', 'FIXED_OPS:SPECIAL_PLAN:VIEW', 'KA_FIXED_OPS:PLAN:VIEW'] }
+            USER: { code: 'USER', name: 'General User', permissions: ['PRODUCT_MGMT:L1_PRODUCT:VIEW', 'PRODUCT_MGMT:L2_ITEM:VIEW', 'FIXED_OPS:SPECIAL_PLAN:VIEW', 'KA_FIXED_OPS:PLAN:VIEW', 'TARGET_OPS:KA_WHITELIST:VIEW', 'TARGET_OPS:TEXT_LINK:VIEW'] }
         },
         users: [
             { id: 1, name: 'Admin User', role: 'SUPER_ADMIN' },
@@ -113,6 +116,28 @@
         ],
         target_templates: [
             { template_no: '2111', item_code: 'Targets', name: 'Christmas 2026', rec_type: 'festival', reason_type: 9, icon: IMG_XMAS, card_background: BG_XMAS, pinned_sorting: 100, target_amount: 2000000, target_amounts: [2000000, 5000000, 10000000], target_amounts_desc: ['Standard', 'Premium', 'Luxurious'], period_type: 0, end_date: '2026-12-23', duration: null, expire_date: '2026-12-15', keywords: 'christmas,santa', base_members: 1000, template_status: 1, is_show: 1 }
+        ],
+        ac_retention_strategies: [
+            {
+                id: 'STR-2026-001', name: 'OWealth 未激活引导', priority: 99, status: 1, popupType: 'custom', operator: 'Admin', updateTime: '2026-03-23',
+                target_audience_id: '',
+                script: "context.isAutoSaveOpen == false",
+                show: true, protocolText: "I have read and agree to the Terms", urlTermsConditions: "https://opay.com/tc", urlPrivacyPolicy: "https://opay.com/pp",
+                icon: "https://files.opayweb.com/image/26c719690fc30487eb51a900db9e100d.png", title: "Earn 5% P.A. Daily!", brief: "Turn on AutoSave now.", image: "https://files.opayweb.com/image/0c139af3722ea067ed956db7ac6f6d5a.webp", buttonLeftTxt: "Not Now", buttonRightTxt: "Turn On", buttonUrl: "app://action/claim_coupon"
+            },
+            {
+                id: 'STR-2026-002', name: 'MP转账截留', priority: 80, status: 0, popupType: 'autosave', operator: 'System', updateTime: '2026-03-22',
+                target_audience_id: '9999',
+                script: "context.transferAmount >= 5000 && context.bankName == 'Monie Point'",
+                show: true, protocolText: "Agree to Autosave", urlTermsConditions: "https://opay.com/tc", urlPrivacyPolicy: "https://opay.com/pp",
+                icon: "https://files.opayweb.com/image/8d42fc74beba45b7a361bb5566c2a8bc.png", title: "Autosave Enabled", brief: "Save easily.", image: "", buttonLeftTxt: "Cancel", buttonRightTxt: "Confirm", buttonUrl: ""
+            }
+        ],
+        ka_whitelists: [
+            { id: 1001, name: 'KA VIP Core 1001', count: 2, updateTime: D_YESTERDAY.split('T')[0], users: ['256626040238006', '256626040201931'] }
+        ],
+        text_link_strategies: [
+            { strategy_id: 'STR-000001', name: '理财未开户资产引导', crowd_rule: '1023', display_text: 'Upgrade balance account to <font color="#31C086">get daily interest ></font>', link_url: 'https://owealthh5.opayweb.com/owealth/aggressive-promotion-new', weight: 1, status: 1, start_time: '', end_time: '' }
         ],
         categories: [
             { code: 'OWealth', name: 'OWealth' }, { code: 'Targets', name: 'Targets' }, { code: 'Fixed', name: 'Fixed' },

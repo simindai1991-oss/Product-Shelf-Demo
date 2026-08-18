@@ -50,10 +50,13 @@ export const PERMISSION_TREE = [
             }
         ]
     },
-    {
+{
         code: 'TARGET_OPS', name: '功能管理',
         resources: [
-            { code: 'TEMPLATE', name: 'Target场景模板', actions: [{k:'VIEW', n:'查看'}, {k:'EDIT', n:'编辑'}, {k:'CREATE', n:'创建'}] }
+            { code: 'TEMPLATE', name: 'Target场景模板', actions: [{k:'VIEW', n:'查看'}, {k:'EDIT', n:'编辑'}, {k:'CREATE', n:'创建'}] },
+            { code: 'AC_RETENTION', name: 'AC转账挽留策略', actions: [{k:'VIEW', n:'查看'}, {k:'EDIT', n:'编辑'}, {k:'CREATE', n:'创建'}] },
+            { code: 'KA_WHITELIST', name: 'KA Fixed白名单', actions: [{k:'VIEW', n:'查看'}, {k:'EDIT', n:'编辑'}, {k:'CREATE', n:'创建'}] },
+            { code: 'TEXT_LINK', name: '资产页引导文案', actions: [{k:'VIEW', n:'查看'}, {k:'EDIT', n:'编辑'}, {k:'CREATE', n:'创建'}] }
         ]
     },
     {
@@ -107,7 +110,6 @@ export function checkPermission(permStr, currentRoleCode, rolesList) {
     const currentRole = rolesList.find(r => r.code === currentRoleCode);
     if (!currentRole) return false;
     
-    // Super Admin Wildcard
     if (currentRole.permissions.includes('*')) return true;
 
     return currentRole.permissions.includes(permStr);
