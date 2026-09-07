@@ -43,10 +43,17 @@
                     'TARGET_OPS:AC_RETENTION:VIEW', 'TARGET_OPS:AC_RETENTION:CREATE', 'TARGET_OPS:AC_RETENTION:EDIT',
                     'TARGET_OPS:KA_WHITELIST:VIEW', 'TARGET_OPS:KA_WHITELIST:CREATE', 'TARGET_OPS:KA_WHITELIST:EDIT',
                     'TARGET_OPS:TEXT_LINK:VIEW', 'TARGET_OPS:TEXT_LINK:CREATE', 'TARGET_OPS:TEXT_LINK:EDIT',
+                    'INSURANCE_MGMT:PLAN:VIEW', 'INSURANCE_MGMT:PLAN:CREATE', 'INSURANCE_MGMT:PLAN:EDIT',
+                    'INSURANCE_MGMT:CATEGORY:VIEW', 'INSURANCE_MGMT:CATEGORY:CREATE', 'INSURANCE_MGMT:CATEGORY:EDIT',
+                    'INSURANCE_MGMT:COMPANY:VIEW', 'INSURANCE_MGMT:COMPANY:CREATE', 'INSURANCE_MGMT:COMPANY:EDIT',
                     'SYSTEM:PARAMS:VIEW', 'SYSTEM:USER:VIEW', 'SYSTEM:RBAC:VIEW'
                 ]
             },
-            USER: { code: 'USER', name: 'General User', permissions: ['PRODUCT_MGMT:L1_PRODUCT:VIEW', 'PRODUCT_MGMT:L2_ITEM:VIEW', 'FIXED_OPS:SPECIAL_PLAN:VIEW', 'KA_FIXED_OPS:PLAN:VIEW', 'TARGET_OPS:KA_WHITELIST:VIEW', 'TARGET_OPS:TEXT_LINK:VIEW'] }
+            USER: { code: 'USER', name: 'General User', permissions: [
+                'PRODUCT_MGMT:L1_PRODUCT:VIEW', 'PRODUCT_MGMT:L2_ITEM:VIEW', 'FIXED_OPS:SPECIAL_PLAN:VIEW', 'KA_FIXED_OPS:PLAN:VIEW',
+                'TARGET_OPS:KA_WHITELIST:VIEW', 'TARGET_OPS:TEXT_LINK:VIEW',
+                'INSURANCE_MGMT:PLAN:VIEW', 'INSURANCE_MGMT:CATEGORY:VIEW', 'INSURANCE_MGMT:COMPANY:VIEW'
+            ] }
         },
         users: [
             { id: 1, name: 'Admin User', role: 'SUPER_ADMIN' },
@@ -143,6 +150,61 @@
             { code: 'OWealth', name: 'OWealth' }, { code: 'Targets', name: 'Targets' }, { code: 'Fixed', name: 'Fixed' },
             { code: 'SafeBox', name: 'SafeBox' }, { code: 'Spend & Save', name: 'Spend & Save' }, { code: 'Sub-account', name: 'Sub-account' },
             { code: 'Superbalance', name: 'Superbalance' }
+        ],
+        // —— Insurance 管理台（对齐 docs/insurance/08-domain-fact-statement.md）——
+        insurance_categories: [
+            { code: 'HMO', name: 'HMO 保险', description: '医疗险 / Health Maintenance Organization', status: 'Active', sortOrder: 1 },
+            { code: 'PA', name: '意外险', description: 'Personal Accident；一期对接中（AIICO）', status: 'Integrating', sortOrder: 2 }
+        ],
+        insurance_companies: [
+            { code: 'NEM', name: 'NEM Insurance', shortName: 'NEM', description: '一期 HMO 承保方（Rose Plan）', status: 'Active', sortOrder: 1 },
+            { code: 'AIICO', name: 'AIICO Insurance', shortName: 'AIICO', description: '一期意外险承保方（接入中）', status: 'Active', sortOrder: 2 }
+        ],
+        insurance_plans: [
+            {
+                planCode: 'ROSE_PLAN',
+                underwriterCode: 'NEM',
+                planName: 'OPay Rose Plan',
+                externalProductCode: 'nem_health_basic',
+                insuranceType: 'HMO',
+                providerNetworkSummary: 'Tier 1 selected hospitals nationwide, Nigeria (Cashless HMO)',
+                gracePeriodEnabled: true,
+                gracePeriodDays: 7,
+                autoRenewLeadDays: 0,
+                supportedPaymentModes: ['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
+                monthlyPrice: 1500,
+                quarterlyPrice: 4500,
+                biannualPrice: 9000,
+                annualPrice: 18000,
+                shelfStatus: 'OnShelf',
+                isActive: true,
+                firstMonthFree: true,
+                promoLabel: 'Free for 1st month',
+                minInsuredAge: 18,
+                maxInsuredAge: 65,
+                sortOrder: 1,
+                shortDescription: '24/7 tele-consultation, Tier 1 cashless hospitals, annual limit ₦200,000',
+                brochureName: 'OPay Rose Plan Product Brochure',
+                brochureUrl: 'https://example.com/docs/opay-rose-plan-brochure.pdf',
+                claimGuideUrl: 'https://example.com/docs/opay-rose-claim-guide',
+                telemedicineUrl: 'https://example.com/telemedicine/nem',
+                coverImageUrl: 'https://files.opayweb.com/image/26c719690fc30487eb51a900db9e100d.png',
+                faqs: [
+                    { q: 'Is there a waiting period before I can access coverage?', a: 'Yes. Certain benefits unlock after 3 to 6 months of continuous coverage (T3 / T6 / T9).' },
+                    { q: 'Is there an age limit for the plan?', a: 'Yes, this plan covers ages 18–65 years.' }
+                ],
+                claimSteps: [
+                    'Enrollee completes registration and receives a welcome message by SMS or email.',
+                    'Find a nearby hospital in the App hospital network to access care.',
+                    'Visit the hospital and present your Policy No. (or registered phone number) as enrollee ID.'
+                ],
+                covers: [
+                    { coverCode: 'OUTPATIENT', coverName: 'Out Patient Care', limitText: 'Subject to Overall Limit', effectiveRuleSubtitle: 'Effective after 3 months continuous cover · subject to annual limit', detailedDescription: 'Covers consultation fees, basic examination, and routine outpatient care at in-network Tier 1 facilities.', sortOrder: 1 },
+                    { coverCode: 'EMERGENCY', coverName: 'Accident and Emergency', limitText: '₦30,000', effectiveRuleSubtitle: 'Effective immediately · per-visit sub-limit applies', detailedDescription: 'Immediate emergency and accident care at network hospitals. No waiting period (T0).', sortOrder: 2 },
+                    { coverCode: 'SURGERY', coverName: 'Surgical Services', limitText: '₦50,000 (₦100,000 after T9)', effectiveRuleSubtitle: 'T6 unlock ₦50K · T9 upgrades to ₦100K', detailedDescription: 'Eligible surgical procedures after 6 months continuous cover (T6).', sortOrder: 3 },
+                    { coverCode: 'ADDITIONAL', coverName: 'Additional Cares', limitText: 'Telemedicine / Online consult', effectiveRuleSubtitle: 'Telemedicine T0', detailedDescription: 'Includes 24/7 tele-consultation (T0) and other supplementary benefits.', sortOrder: 4 }
+                ]
+            }
         ],
         system_params: [
             { key: 'EXAMPLE_VARIABLE', value: '1.0', desc: 'Example Parameter' }

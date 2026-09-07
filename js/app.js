@@ -12,6 +12,9 @@ import TargetTemplateManager from './views/TargetTemplateManager.js';
 import AcRetentionManager from './views/AcRetentionManager.js'; 
 import KaWhitelistManager from './views/KaWhitelistManager.js'; 
 import TextLinkManager from './views/TextLinkManager.js'; // 引入新增的文字链策略视图
+import InsuranceProductList from './views/InsuranceProductList.js';
+import InsuranceCategoryManager from './views/InsuranceCategoryManager.js';
+import InsuranceCompanyManager from './views/InsuranceCompanyManager.js';
 import SystemParams from './views/SystemParams.js';
 import UserManagement from './views/UserManagement.js';
 import RolePermissions from './views/RolePermissions.js';
@@ -21,6 +24,7 @@ const app = Vue.createApp({
         Toast, DiffSnapshot, ProductForm,
         ProductRegistry, ItemRegistry, FixedPlanManager, KaFixedPlanManager, 
         TargetTemplateManager, AcRetentionManager, KaWhitelistManager, TextLinkManager,
+        InsuranceProductList, InsuranceCategoryManager, InsuranceCompanyManager,
         SystemParams, UserManagement, RolePermissions
     },
     data() {
@@ -36,6 +40,7 @@ const app = Vue.createApp({
 
             productDefinitions: [], savingItems: [], fixedPlans: [], kaFixedPlans: [], 
             targetTemplates: [], acRetentionStrategies: [], kaWhitelists: [], textLinkStrategies: [],
+            insurancePlans: [], insuranceCategories: [], insuranceCompanies: [],
             rolesList: [], categories: [], systemParams: [], usersList: [],
             
             showModal: false, modalMode: 'view', modalFormType: 'product_def', editingData: {},
@@ -51,6 +56,11 @@ const app = Vue.createApp({
                    this.hasPermission('PRODUCT_MGMT:L2_ITEM:VIEW') || 
                    this.hasPermission('FIXED_OPS:SPECIAL_PLAN:VIEW') ||
                    this.hasPermission('KA_FIXED_OPS:PLAN:VIEW');
+        },
+        showInsuranceMenu() {
+            return this.hasPermission('INSURANCE_MGMT:PLAN:VIEW') ||
+                   this.hasPermission('INSURANCE_MGMT:CATEGORY:VIEW') ||
+                   this.hasPermission('INSURANCE_MGMT:COMPANY:VIEW');
         },
         showFuncMenu() {
             return this.hasPermission('TARGET_OPS:TEMPLATE:VIEW') ||
@@ -84,6 +94,9 @@ const app = Vue.createApp({
             this.acRetentionStrategies = C.ac_retention_strategies || [];
             this.kaWhitelists = C.ka_whitelists || [];
             this.textLinkStrategies = C.text_link_strategies || [];
+            this.insurancePlans = C.insurance_plans || [];
+            this.insuranceCategories = C.insurance_categories || [];
+            this.insuranceCompanies = C.insurance_companies || [];
 
             this.systemParams = C.system_params || [];
             this.usersList = C.users || [];
@@ -280,7 +293,52 @@ const app = Vue.createApp({
             }
         },
         handleUpdateUserRole(user, roleCode) { user.role = roleCode; this.showToast('权限已更新'); },
-        handleSaveRole(role, mode) { if (mode === 'create') this.rolesList.push(role); else { const idx = this.rolesList.findIndex(r => r.code === role.code); if (idx !== -1) this.rolesList[idx] = role; } this.showToast('配置已保存'); }
+        handleSaveRole(role, mode) { if (mode === 'create') this.rolesList.push(role); else { const idx = this.rolesList.findIndex(r => r.code === role.code); if (idx !== -1) this.rolesList[idx] = role; } this.showToast('配置已保存'); },
+
+        handleCreateInsurancePlan(plan) {
+            if (this.insurancePlans.some(p => p.planCode === plan.planCode)) {
+                this.showToast('planCode 已存在', '⚠️');
+                return;
+            }
+            this.insurancePlans.push(JSON.parse(JSON.stringify(plan)));
+            this.showToast('保险产品已创建');
+        },
+        handleUpdateInsurancePlan(plan) {
+            const idx = this.insurancePlans.findIndex(p => p.planCode === plan.planCode);
+            if (idx !== -1) {
+                this.insurancePlans[idx] = JSON.parse(JSON.stringify(plan));
+                this.showToast('产品参数已保存');
+            }
+        },
+        handleReorderInsurancePlans(ordered) {
+            ordered.forEach(({ planCode, sortOrder }) => {
+                const p = this.insurancePlans.find(x => x.planCode === planCode);
+                if (p) p.sortOrder = sortOrder;
+            });
+            this.showToast('货架排序已更新');
+        },
+        handleCreateInsuranceCategory(cat) {
+            this.insuranceCategories.push(cat);
+            this.showToast('品类已创建');
+        },
+        handleUpdateInsuranceCategory(cat) {
+            const idx = this.insuranceCategories.findIndex(c => c.code === cat.code);
+            if (idx !== -1) {
+                this.insuranceCategories[idx] = cat;
+                this.showToast('品类已更新');
+            }
+        },
+        handleCreateInsuranceCompany(co) {
+            this.insuranceCompanies.push(co);
+            this.showToast('保险公司已创建');
+        },
+        handleUpdateInsuranceCompany(co) {
+            const idx = this.insuranceCompanies.findIndex(c => c.code === co.code);
+            if (idx !== -1) {
+                this.insuranceCompanies[idx] = co;
+                this.showToast('保险公司已更新');
+            }
+        }
     },
     template: `
         <div v-if="!configLoaded" class="fixed inset-0 z-50 bg-red-50 flex items-center justify-center">
@@ -328,6 +386,25 @@ const app = Vue.createApp({
                         </a>
                     </nav>
                 </div>
+
+                <div class="mb-8" v-if="showInsuranceMenu">
+                    <div class="px-6 mb-3 text-xs font-bold text-gray-400 uppercase tracking-wider">保险产品管理</div>
+                    <nav class="flex flex-col space-y-1">
+                        <a href="#" v-if="hasPermission('INSURANCE_MGMT:PLAN:VIEW')" @click.prevent="currentView = 'insurance_plans'" :class="navClass('insurance_plans')" class="px-6 py-2.5 text-sm transition-colors flex items-center gap-3">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>
+                            保险产品列表
+                        </a>
+                        <a href="#" v-if="hasPermission('INSURANCE_MGMT:CATEGORY:VIEW')" @click.prevent="currentView = 'insurance_categories'" :class="navClass('insurance_categories')" class="px-6 py-2.5 text-sm transition-colors flex items-center gap-3">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                            保险品类管理
+                        </a>
+                        <a href="#" v-if="hasPermission('INSURANCE_MGMT:COMPANY:VIEW')" @click.prevent="currentView = 'insurance_companies'" :class="navClass('insurance_companies')" class="px-6 py-2.5 text-sm transition-colors flex items-center gap-3">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M9 21v-6h6v6"></path></svg>
+                            保险公司管理
+                        </a>
+                    </nav>
+                </div>
+
                 <div class="mb-8" v-if="showFuncMenu">
                     <div class="px-6 mb-3 text-xs font-bold text-gray-400 uppercase tracking-wider">功能管理</div>
                     <nav class="flex flex-col space-y-1">
@@ -387,6 +464,10 @@ const app = Vue.createApp({
 
                 <!-- 新增的 资产页引导文案 视图路由 -->
                 <TextLinkManager v-if="currentView === 'text_link'" :strategies="textLinkStrategies" :has-permission="hasPermission" @create-strategy="handleCreateTextLink" @update-strategy="handleUpdateTextLink" @delete-strategy="handleDeleteTextLink" />
+
+                <InsuranceProductList v-if="currentView === 'insurance_plans'" :plans="insurancePlans" :categories="insuranceCategories" :companies="insuranceCompanies" :has-permission="hasPermission" @create-plan="handleCreateInsurancePlan" @update-plan="handleUpdateInsurancePlan" @reorder-plans="handleReorderInsurancePlans" />
+                <InsuranceCategoryManager v-if="currentView === 'insurance_categories'" :categories="insuranceCategories" :has-permission="hasPermission" @create-category="handleCreateInsuranceCategory" @update-category="handleUpdateInsuranceCategory" />
+                <InsuranceCompanyManager v-if="currentView === 'insurance_companies'" :companies="insuranceCompanies" :has-permission="hasPermission" @create-company="handleCreateInsuranceCompany" @update-company="handleUpdateInsuranceCompany" />
 
                 <SystemParams v-if="currentView === 'params'" :params="systemParams" :has-permission="hasPermission" @update-param="handleUpdateParam" @add-param="handleAddParam" />
                 <UserManagement v-if="currentView === 'users'" :users="usersList" :roles="rolesList" :has-permission="hasPermission" @add-user="handleAddUser" @update-user="handleUpdateUser" />

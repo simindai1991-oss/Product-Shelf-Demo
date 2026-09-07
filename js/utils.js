@@ -60,6 +60,14 @@ export const PERMISSION_TREE = [
         ]
     },
     {
+        code: 'INSURANCE_MGMT', name: '保险产品管理',
+        resources: [
+            { code: 'PLAN', name: '保险产品', actions: [{k:'VIEW', n:'查看'}, {k:'CREATE', n:'创建'}, {k:'EDIT', n:'编辑'}] },
+            { code: 'CATEGORY', name: '保险品类', actions: [{k:'VIEW', n:'查看'}, {k:'CREATE', n:'创建'}, {k:'EDIT', n:'编辑'}] },
+            { code: 'COMPANY', name: '保险公司', actions: [{k:'VIEW', n:'查看'}, {k:'CREATE', n:'创建'}, {k:'EDIT', n:'编辑'}] }
+        ]
+    },
+    {
         code: 'SYSTEM', name: '系统管理',
         resources: [
             { code: 'PARAMS', name: '系统参数', actions: [{k:'VIEW', n:'查看'}, {k:'EDIT', n:'编辑'}] },
